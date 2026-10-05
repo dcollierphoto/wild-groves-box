@@ -72,7 +72,7 @@ button[aria-pressed="true"]{background:var(--seal);border-color:var(--seal);colo
   </div>
   <div class="group">
     <button type="button" id="spin" aria-pressed="true">Spin</button>
-    <button type="button" id="bottles" aria-pressed="true">Bottles</button>
+    <button type="button" id="bottles" aria-pressed="false">Bottles</button>
   </div>
 </div>
 <p class="note">Mockup for review. Bottles and insert are placeholders.</p>
@@ -133,7 +133,7 @@ slab(Wt, Hh - t, t, 0, (Hh - t) / 2, zb + t / 2 + .002); slab(Wt, hfw, t, 0, hfw
 slab(Wt, t, Dt, 0, t / 2 + .002, zb + Dt / 2);
 slab(Wd - .01, t, zf - ztf, 0, t / 2, (zf + ztf) / 2);
 // placeholder contents: three 100 ml bottles and simple dividers
-const contents = new THREE.Group(); box.add(contents);
+const contents = new THREE.Group(); contents.visible = false; box.add(contents);   // starts empty; the Bottles button shows them
 { const br = .80, cy = t + .06 + br;
   slab(Wt - 2 * t, .05, Dt - 2 * t, 0, t + .03, zb + Dt / 2, 0xcfa26a, contents);
   const glass = new THREE.MeshPhysicalMaterial({ color: 0x10160b, roughness: .18, metalness: 0, clearcoat: .6, clearcoatRoughness: .15, envMapIntensity: .8 });
