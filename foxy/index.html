@@ -21,7 +21,8 @@
 :root[data-theme="dark"]{
   --sweep-top:#2b2a27; --sweep-bot:#141412; --ink:#efece4; --muted:#a39d8f;
   --foil:#d6b469; --chip:#2a2926cc; --chip-line:#ffffff1a; color-scheme:dark}
-html,body{height:100%}
+html{box-sizing:border-box;height:100%;height:100dvh}body{height:100%}
+.stage{box-sizing:border-box}
 body{background:var(--sweep-bot);color:var(--ink);font-family:var(--body);overflow:hidden}
 .stage{position:relative;height:100%;display:grid;grid-template-rows:auto 1fr auto;
   background:radial-gradient(120% 80% at 50% 30%,var(--sweep-top),var(--sweep-bot));
