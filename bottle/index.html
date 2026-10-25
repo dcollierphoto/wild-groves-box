@@ -145,11 +145,10 @@ const photoMat = new THREE.ShaderMaterial({
         float facing = cos(az);
         c.rgb *= 1.0 + edge*(0.55*rib*facing + 0.25*max(rib,0.0));
       }
-      // one tall strip highlight on the glass only, as bright as the backdrop; the label is not
-      // affected, so the foil stays readable. A softer glow around it rolls the glass up to it.
-      float strip = exp(-pow((az-0.62)/0.10,2.0));
-      float glow = exp(-pow((az-0.56)/0.28,2.0));
-      c.rgb = mix(c.rgb*(1.0+0.12*uGlass), vec3(0.93,0.92,0.88), strip*mix(0.3,0.78,uGlass)) + glow*0.05*uGlass;
+      // a broad, faint wash of light over the right half of the glass (about 15%), glass only,
+      // so the label and its foil keep the overhead scrim light
+      float wash = smoothstep(-0.15,0.35,az)*(1.0-smoothstep(1.05,1.45,az));
+      c.rgb = mix(c.rgb, vec3(0.95,0.94,0.91), wash*0.15*mix(0.5,1.0,uGlass));
       gl_FragColor = c;
       #include <colorspace_fragment>
     }`
