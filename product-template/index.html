@@ -258,8 +258,13 @@ bottle.position.y = 0;
 // Everyone sees the same order, the one David sets on the full-size labels page; hidden labels are left out.
 const thumbsEl=document.querySelector('.thumbs');
 let current=0;
-const order=LABELS.map((_,i)=>i);
+let order=LABELS.map((_,i)=>i);
 let hidden=LABELS.map((L,i)=>L.hidden?i:-1).filter(i=>i>=0);
+// a browser without the studio key keeps its own order and hidden labels (saved by label id)
+const readLocal=k=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return Array.isArray(v)?v:null; }catch(e){ return null; } };
+const localIdx=k=>(readLocal(k)||[]).map(v=>typeof v==='number'?String(v+1).padStart(2,'0'):String(v)).map(id=>LABELS.findIndex(L=>L.id===id)).filter(i=>i>=0);
+if(!STUDIO_KEY){ const lo=localIdx(P.key+'-order'), lh=readLocal(P.key+'-hidden');
+  if(lo.length) order=[...lo, ...order.filter(i=>!lo.includes(i))]; if(lh) hidden=localIdx(P.key+'-hidden'); }
 const visible=()=>order.filter(i=>!hidden.includes(i) && !LABELS[i].temp).concat(order.filter(i=>LABELS[i].temp));
 // each label has a name people can use when they say which one they like; the page link carries it too
 const slug=i=>LABELS[i].name.toLowerCase().replace(/[^a-z0-9]+/g,'-');

@@ -129,10 +129,15 @@ const slug = i => NAMES[i].toLowerCase().replace(/[^a-z0-9]+/g,'-');
 const ids=LABELS.map(L=>L.id);
 let order=LABELS.map((_,i)=>i);
 let hidden=LABELS.map((L,i)=>L.hidden?i:-1).filter(i=>i>=0);
+// a browser without the studio key keeps its own order and hidden labels (saved by label id)
+const readLocal=k=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return Array.isArray(v)?v:null; }catch(e){ return null; } };
+const localIdx=k=>(readLocal(k)||[]).map(v=>typeof v==='number'?String(v+1).padStart(2,'0'):String(v)).map(id=>LABELS.findIndex(L=>L.id===id)).filter(i=>i>=0);
+if(!canEdit){ const lo=localIdx(P.key+'-order'), lh=readLocal(P.key+'-hidden');
+  if(lo.length) order=[...lo, ...order.filter(i=>!lo.includes(i))]; if(lh) hidden=localIdx(P.key+'-hidden'); }
 let myRev=MAN.rev||0, saveTimer=null, saving=false, again=false;
 const status=document.getElementById('status');
 const say=(text,kind='')=>{ status.textContent=text; status.className='status '+kind; status.hidden=!text; };
-const save=()=>{ if(!canEdit) return; clearTimeout(saveTimer); say('Saving your order…'); saveTimer=setTimeout(push,900); };
+const save=()=>{ if(!canEdit){ try{ localStorage.setItem(P.key+'-order',JSON.stringify(order.map(i=>ids[i]))); localStorage.setItem(P.key+'-hidden',JSON.stringify(hidden.map(i=>ids[i]))); }catch(e){} return; } clearTimeout(saveTimer); say('Saving your order…'); saveTimer=setTimeout(push,900); };
 async function push(){
   if(saving){ again=true; return; } saving=true;
   try{
@@ -170,8 +175,7 @@ function render(){
     if(LABELS[i].file){ const f=document.createElement('button'); f.type='button'; f.className='file'; f.title='Click to copy the file name';
       f.textContent=LABELS[i].file; c.querySelector('.cap').append(f);
       f.onclick=e=>{ e.stopPropagation(); copyName(f, LABELS[i].file); }; f.ondblclick=e=>e.stopPropagation(); }
-    if(canEdit) c.querySelector('.x').onclick=e=>{ e.stopPropagation(); if(visible().length<=1) return; hidden.push(i); save(); render(); };
-    else c.querySelector('.x').remove();
+    c.querySelector('.x').onclick=e=>{ e.stopPropagation(); if(visible().length<=1) return; hidden.push(i); save(); render(); };
     // desktop: double-click opens; touch: a tap opens (double-tap zooms the page on phones)
     // one click puts it on the bottle; a double-click (or the expand button) opens it full size
     let clickTimer=null;
@@ -182,10 +186,10 @@ function render(){
     c.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); location.href='../?v='+N+'#'+slug(i); } else if(e.key===' '){ e.preventDefault(); open(i); } };
     grid.append(c);
   });
-  reset.hidden = !canEdit || !hidden.length; reset.textContent = `Show hidden labels (${hidden.length})`;
+  reset.hidden = !hidden.length; reset.textContent = `Show hidden labels (${hidden.length})`;
 }
 // if the drag library can't load, the page still works without reordering
-if(canEdit && window.Sortable) Sortable.create(grid,{ animation:180, delay:220, delayOnTouchOnly:true, filter:'.x,.zoom,.file', preventOnFilter:false,
+if(window.Sortable) Sortable.create(grid,{ animation:180, delay:220, delayOnTouchOnly:true, filter:'.x,.zoom,.file', preventOnFilter:false,
   ghostClass:'ghost', chosenClass:'chosen', forceFallback:true, fallbackTolerance:4,
   onEnd(){ const vis=[...grid.children].map(c=>+c.dataset.i); order=[...vis, ...order.filter(k=>!vis.includes(k))]; save(); render(); } });
 // brings hidden labels back without touching the custom order
