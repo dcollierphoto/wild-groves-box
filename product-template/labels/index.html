@@ -94,7 +94,7 @@ h1 span{color:var(--pink)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script type="module">
 // The label list (and the product's name and colour) comes from labels.json, which the studio page edits.
-const MAN = await fetch('../labels.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null) || {"product": {"key": "", "name": "", "sub": "", "color": ""}, "labels": [], "removed": []};
+const MAN = await fetch('../labels.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null) || {"product": {"key": "new", "name": "New product", "sub": "500 mL", "color": "#6f7d3c"}, "labels": [], "removed": []};
 const P = Object.assign({key:'foxy', name:'', color:''}, MAN.product||{});
 const LABELS = MAN.labels||[];
 if(P.name){ document.title=P.name+' Labels'; document.querySelector('h1').firstChild.textContent=P.name+' '; }

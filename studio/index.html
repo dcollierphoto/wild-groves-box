@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Label Studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Montserrat:wght@400;500;600&display=swap">
+<style>
+/* Layout: controls on the left, a live bottle preview on the right (stacked on phones).
+   Nothing here is linked from the public pages. */
+:root{
+  --bg:#f3f1ec; --card:#ffffff; --ink:#26241f; --muted:#6f6a5e; --line:#e2ddd2; --accent:#6f7d3c; --warn:#a4501a; --bad:#b3261e; --good:#3f6b2a;
+  --display:'Oswald','Arial Narrow',sans-serif; --body:'Montserrat',system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:1240px;margin:0 auto;padding-block:22px 60px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,460px);gap:28px;align-items:start}
+@media (max-width:900px){ .wrap{grid-template-columns:minmax(0,1fr)} }
+h1{font:600 clamp(26px,4vw,34px)/1.1 var(--display);letter-spacing:.05em;text-transform:uppercase;margin:0 0 4px}
+.lede{color:var(--muted);margin:0 0 18px;max-width:60ch}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}
+h2{font:600 13px/1.2 var(--body);letter-spacing:.14em;text-transform:uppercase;margin:0 0 12px;color:var(--muted)}
+label.f{display:grid;gap:4px;font:600 12px/1.2 var(--body);color:var(--muted);letter-spacing:.04em}
+input[type=text],input[type=password],select{font:500 15px/1.3 var(--body);color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:7px;padding:10px 12px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row > *{flex:1 1 180px;min-width:0}
+.btn{font:600 13px/1 var(--body);letter-spacing:.06em;border-radius:999px;padding:11px 16px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;flex:none}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.primary:disabled{opacity:.35;cursor:not-allowed}
+.btn.small{padding:7px 10px;font-size:12px}
+.btn.danger{color:var(--bad)}
+.note{font-size:13px;color:var(--muted)}
+.msg{font-size:14px;padding:10px 12px;border-radius:7px;margin-top:10px}
+.msg.good{background:#eef3e8;color:var(--good)} .msg.bad{background:#f8e9e7;color:var(--bad)} .msg.warn{background:#f7eee5;color:var(--warn)}
+ol.steps{margin:6px 0 12px;padding-left:20px;font-size:14px}
+ol.steps li{margin:3px 0}
+code{font:12.5px/1.3 ui-monospace,Menlo,monospace;background:#f3f1ec;padding:1px 5px;border-radius:4px}
+
+.drop{display:grid;place-items:center;text-align:center;gap:6px;border:2px dashed var(--line);border-radius:10px;padding:22px;cursor:pointer;color:var(--muted);transition:border-color .15s, background .15s}
+.drop.over{border-color:var(--accent);background:#f7f8f1}
+.drop b{color:var(--ink);font-size:15px}
+.drop input{display:none}
+
+.list{display:grid;gap:8px}
+.item{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.item.new{border-color:var(--accent);background:#fafbf6}
+.item.gone{opacity:.45}
+.item img{width:56px;height:67px;object-fit:cover;border-radius:5px;border:1px solid var(--line);background:#f3f1ec}
+.item input{padding:8px 10px;font-size:14px}
+.item .tags{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.tag{font:600 10px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;padding:4px 6px;border-radius:999px;background:#f3f1ec;color:var(--muted)}
+.tag.new{background:var(--accent);color:#fff} .tag.foil{background:#efe3c4;color:#7a5b16}
+.item .acts{display:flex;gap:4px;flex-wrap:wrap;justify-content:end;max-width:200px}
+@media (max-width:520px){ .item{grid-template-columns:48px minmax(0,1fr)} .item .acts{grid-column:1 / -1;justify-content:start;max-width:none} .item img{width:48px;height:58px} }
+
+.pub{position:sticky;bottom:0;z-index:5;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,.05)}
+.pub .note{flex:1 1 220px}
+
+aside{position:sticky;top:16px}
+aside .frame{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;height:min(78vh,760px)}
+aside iframe{display:block;width:100%;height:100%;border:0}
+@media (max-width:900px){ aside{position:static} aside .frame{height:620px} }
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<main>
+  <h1>Label Studio</h1>
+  <p class="lede">Add a new label to a bottle, rename or reorder labels, or start a new product. Nothing goes live until you press Publish. This page is private: it only works on a device that has your studio key.</p>
+
+  <!-- 1. Key -->
+  <section id="keyBox">
+    <h2>Studio key</h2>
+    <div id="keyNeeded">
+      <p class="note" style="margin-top:0">The studio needs a key from GitHub once, so it's allowed to save to your site. It stays on this device only.</p>
+      <ol class="steps">
+        <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub's new key page</a> and sign in.</li>
+        <li>Name it <code>Label Studio</code>. Set the expiration as long as GitHub allows.</li>
+        <li>Under <b>Repository access</b>, choose <b>Only select repositories</b>, then pick <code>wild-groves-box</code>.</li>
+        <li>Under <b>Permissions</b>, find <b>Contents</b> and set it to <b>Read and write</b>.</li>
+        <li>Press <b>Generate token</b>, copy it, and paste it below.</li>
+      </ol>
+      <div class="row">
+        <label class="f">Paste your key<input type="password" id="keyIn" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+        <button class="btn primary" id="keySave">Save key</button>
+      </div>
+    </div>
+    <div id="keyOk" class="hidden row" style="align-items:center">
+      <p class="note" style="margin:0;flex:1 1 auto" id="keyStatus"></p>
+      <button class="btn small" id="keyForget">Forget key on this device</button>
+    </div>
+    <div id="keyMsg"></div>
+  </section>
+
+  <div id="work" class="hidden">
+    <!-- 2. Product -->
+    <section>
+      <h2>Product</h2>
+      <div class="row">
+        <label class="f">Which bottle<select id="prodSel"></select></label>
+        <button class="btn" id="prodNewBtn">+ New product</button>
+      </div>
+      <div id="newProd" class="hidden" style="margin-top:14px">
+        <div class="row">
+          <label class="f">Product name<input type="text" id="npName" maxlength="40" placeholder="e.g. Arbequina"></label>
+          <label class="f">Line under the name<input type="text" id="npSub" maxlength="60" placeholder="e.g. Mild and buttery · 500 mL"></label>
+          <label class="f" style="flex:0 0 120px">Accent colour<input type="color" id="npColor" value="#6f7d3c" style="height:42px;padding:3px;border:1px solid var(--line);border-radius:7px;width:100%"></label>
+        </div>
+        <p class="note">New products use the same 500 mL bottle as Foxy and Olio Nuovo. Add at least one label below, then Publish to create it.</p>
+      </div>
+      <div id="prodMsg"></div>
+    </section>
+
+    <!-- 3. Add a label -->
+    <section>
+      <h2>Add a label</h2>
+      <label class="drop" id="drop">
+        <input type="file" id="fileIn" accept="image/png,image/jpeg,image/webp,application/pdf">
+        <b>Drop a label here, or click to choose a file</b>
+        <span class="note">The flat label, 7 × 6.5 in, as PNG, JPG or PDF. It wraps onto the bottle the same way as the others.</span>
+      </label>
+      <div id="addForm" class="hidden" style="margin-top:14px">
+        <div id="addFields">
+        <div class="row">
+          <img id="addPrev" alt="" style="flex:0 0 120px;width:120px;border-radius:6px;border:1px solid var(--line)">
+          <div style="flex:1 1 240px;display:grid;gap:10px">
+            <label class="f">Label name<input type="text" id="addName" maxlength="40"></label>
+            <label class="f">Gold foil (optional)
+              <input type="file" id="foilIn" accept="image/png,image/jpeg,image/webp,application/pdf" style="font-size:13px">
+            </label>
+            <p class="note" style="margin:0">For foil, upload the printer's foil layer: same size as the label, gold areas in white (or black) on the opposite colour.</p>
+          </div>
+        </div>
+        </div>
+        <div id="addMsg"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" id="addPreview">Preview on the bottle</button>
+          <button class="btn primary" id="addOk">Add to the list</button>
+          <button class="btn" id="addCancel">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Labels -->
+    <section>
+      <h2>Labels on this bottle</h2>
+      <p class="note" style="margin-top:0">This order is what everyone sees first. Rename by typing in the box. Removing hides a label from the site; nothing is deleted from storage.</p>
+      <div class="list" id="list"></div>
+    </section>
+
+    <div class="pub">
+      <span class="note" id="pubNote">No changes yet.</span>
+      <button class="btn" id="discard" disabled>Undo all changes</button>
+      <button class="btn primary" id="publish" disabled>Publish</button>
+    </div>
+    <div id="pubMsg"></div>
+  </div>
+</main>
+
+<aside id="side" class="hidden">
+  <div class="frame"><iframe id="pv" title="Bottle preview"></iframe></div>
+  <p class="note" style="margin:8px 2px 0">Live preview. Labels you haven't published show here only.</p>
+</aside>
+</div>
+
+<script>
+const OWNER='dcollierphoto', REPO='wild-groves-box', BRANCH='main';
+const API=`https://api.github.com/repos/${OWNER}/${REPO}`;
+const LH = 6.4967, LW = 7.0;                 // label inches; images are stretched to this shape
+const $ = s=>document.querySelector(s);
+const msg=(el,text,kind='good')=>{ $(el).innerHTML = text ? `<div class="msg ${kind}"></div>` : ''; if(text) $(el).firstChild.textContent=text; };
+let token = (()=>{ try{ return localStorage.getItem('studio-key')||''; }catch(e){ return ''; } })();
+
+// ---------- GitHub ----------
+async function gh(path, opt={}){
+  const r = await fetch(path.startsWith('http')?path:API+path, {...opt, headers:{
+    'Authorization':'Bearer '+token, 'Accept':opt.accept||'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28',
+    ...(opt.body?{'Content-Type':'application/json'}:{}) }});
+  if(r.status===404 && opt.allow404) return null;
+  if(!r.ok){ const t=await r.text().catch(()=>''); const e=new Error(`GitHub said ${r.status}`); e.status=r.status; e.detail=t; throw e; }
+  return opt.raw ? r.text() : r.json();
+}
+const readText = p => gh(`/contents/${p}?ref=${BRANCH}&t=${Date.now()}`, {accept:'application/vnd.github.raw', raw:true, allow404:true});
+const readJSON = async p => { const t=await readText(p); return t==null?null:JSON.parse(t); };
+const b64text = s => { const b=new TextEncoder().encode(s); let x=''; for(let i=0;i<b.length;i+=0x8000) x+=String.fromCharCode(...b.subarray(i,i+0x8000)); return btoa(x); };
+const b64blob = blob => new Promise((ok,no)=>{ const fr=new FileReader(); fr.onload=()=>ok(String(fr.result).split(',')[1]); fr.onerror=no; fr.readAsDataURL(blob); });
+
+// one commit with every file, so the site never sees half a change
+async function commit(files, message){
+  const ref = await gh(`/git/ref/heads/${BRANCH}`);
+  const base = await gh(`/git/commits/${ref.object.sha}`);
+  const tree = [];
+  for(const f of files){
+    const blob = await gh('/git/blobs',{method:'POST', body:JSON.stringify({content:f.b64, encoding:'base64'})});
+    tree.push({path:f.path, mode:'100644', type:'blob', sha:blob.sha});
+  }
+  const t = await gh('/git/trees',{method:'POST', body:JSON.stringify({base_tree:base.tree.sha, tree})});
+  const c = await gh('/git/commits',{method:'POST', body:JSON.stringify({message, tree:t.sha, parents:[ref.object.sha]})});
+  await gh(`/git/refs/heads/${BRANCH}`,{method:'PATCH', body:JSON.stringify({sha:c.sha})});
+  return c.sha;
+}
+
+// ---------- key ----------
+async function checkKey(){
+  if(!token){ $('#keyNeeded').classList.remove('hidden'); $('#keyOk').classList.add('hidden'); $('#work').classList.add('hidden'); $('#side').classList.add('hidden'); return; }
+  try{
+    const repo = await gh('');
+    if(!repo.permissions || !repo.permissions.push) throw Object.assign(new Error('read-only'),{status:'ro'});
+    $('#keyNeeded').classList.add('hidden'); $('#keyOk').classList.remove('hidden');
+    $('#keyStatus').textContent = `Connected to ${repo.full_name}. This device can publish.`;
+    msg('#keyMsg','');
+    $('#work').classList.remove('hidden'); $('#side').classList.remove('hidden');
+    await loadProducts();
+  }catch(e){
+    $('#keyNeeded').classList.remove('hidden'); $('#keyOk').classList.add('hidden'); $('#work').classList.add('hidden');
+    msg('#keyMsg', e.status===401 ? 'GitHub didn\'t accept that key. It may be mistyped or expired. Make a new one with the steps above.'
+      : e.status===404 ? 'That key can\'t see the wild-groves-box site. In step 3, make sure wild-groves-box is selected.'
+      : e.status==='ro' ? 'That key can only read. In step 4, set Contents to "Read and write".'
+      : 'Couldn\'t reach GitHub. Check your internet connection and try again.', 'bad');
+  }
+}
+$('#keySave').onclick=()=>{ token=$('#keyIn').value.trim(); try{ localStorage.setItem('studio-key',token); }catch(e){} $('#keyIn').value=''; checkKey(); };
+$('#keyForget').onclick=()=>{ token=''; try{ localStorage.removeItem('studio-key'); }catch(e){} checkKey(); };
+
+// ---------- products ----------
+let products=[], prod=null, man=null, work=[], removed=[], newProd=null;
+async function loadProducts(){
+  products = (await readJSON('studio/products.json')) || [{folder:'foxy',name:'Foxy'}];
+  const sel=$('#prodSel'); sel.innerHTML='';
+  products.forEach(p=>{ const o=document.createElement('option'); o.value=p.folder; o.textContent=p.name; sel.append(o); });
+  await openProduct(products[0].folder);
+}
+$('#prodSel').onchange=e=>{ if(dirty() && !confirmLose()) { e.target.value=prod; return; } openProduct(e.target.value); };
+async function openProduct(folder){
+  newProd=null; $('#newProd').classList.add('hidden'); $('#prodSel').disabled=false;
+  prod=folder; msg('#prodMsg','');
+  man = await readJSON(`${folder}/labels.json`);
+  if(!man){ msg('#prodMsg','This product has no label list yet, so it can\'t be edited here.','warn'); man={product:{},labels:[],removed:[]}; }
+  resetWork();
+  setPreview(`../${folder}/?studio=${Date.now()}`);
+}
+function resetWork(){
+  work = man.labels.map(L=>({...L, origName:L.name}));
+  removed = [];
+  cancelAdd(); renderList(); updatePub();
+}
+// a page can't ask "are you sure" with a popup here, so changes are kept unless you press Undo first
+const confirmLose=()=>{ msg('#prodMsg','You have changes that aren\'t published. Publish them, or press "Undo all changes", before switching bottles.','warn'); return false; };
+
+$('#prodNewBtn').onclick=()=>{
+  if(dirty() && !confirmLose()) return;
+  newProd={name:'',sub:'',color:$('#npColor').value};
+  man={product:{},labels:[],removed:[],rev:0}; resetWork();
+  $('#newProd').classList.remove('hidden'); $('#prodSel').disabled=true; $('#npName').focus();
+  setPreview(`../product-template/?studio=${Date.now()}`);
+  updatePub();
+};
+['npName','npSub','npColor'].forEach(id=>$('#'+id).addEventListener('input',()=>{ if(newProd){ newProd.name=$('#npName').value.trim(); newProd.sub=$('#npSub').value.trim(); newProd.color=$('#npColor').value; updatePub(); } }));
+const slugify=s=>s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40);
+const cleanName=s=>s.replace(/[<>"`]/g,'').replace(/\s+/g,' ').trim().slice(0,40);
+
+// ---------- preview ----------
+let lastPreview=null;
+function setPreview(src){ $('#pv').src=src; }
+addEventListener('message',e=>{ if(e.origin===location.origin && e.data && e.data.type==='studio-ready' && lastPreview) sendPreview(lastPreview); });
+function sendPreview(p){ lastPreview=p; try{ $('#pv').contentWindow.postMessage({type:'studio-preview',...p}, location.origin); }catch(e){} }
+const forBottle=src=> src.startsWith('blob:')||src.startsWith('data:') ? src : new URL(`../${prod||'foxy'}/${src}`, location.href).href;
+
+// ---------- images ----------
+async function loadImage(file){
+  if(file.type==='application/pdf') return pdfToCanvas(file);
+  const url=URL.createObjectURL(file);
+  try{ const im=new Image(); im.src=url; await im.decode(); return im; } finally { setTimeout(()=>URL.revokeObjectURL(url),1000); }
+}
+let pdfjs=null;
+async function pdfToCanvas(file){
+  if(!pdfjs){
+    await new Promise((ok,no)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; s.onload=ok; s.onerror=()=>no(new Error('pdf')); document.head.append(s); });
+    pdfjs=window['pdfjs-dist/build/pdf']; pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const doc=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;
+  const page=await doc.getPage(1); const v1=page.getViewport({scale:1}); const vp=page.getViewport({scale:2100/v1.width});
+  const c=document.createElement('canvas'); c.width=Math.round(vp.width); c.height=Math.round(vp.height);
+  await page.render({canvasContext:c.getContext('2d'), viewport:vp}).promise; return c;
+}
+const W=im=>im.naturalWidth||im.width, Hh=im=>im.naturalHeight||im.height;
+function draw(im, w, h, sx=0, sy=0, sw=W(im), sh=Hh(im)){
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
+  g.fillStyle='#fff'; g.fillRect(0,0,w,h); g.imageSmoothingQuality='high'; g.drawImage(im,sx,sy,sw,sh,0,0,w,h); return c;
+}
+const toBlob=(c,type='image/jpeg',q=.88)=>new Promise(ok=>c.toBlob(ok,type,q));
+async function makeLabel(im){
+  const w=W(im), h=Hh(im);
+  const full=await toBlob(draw(im,2048,Math.round(2048*LH/LW)),'image/jpeg',.88);
+  const thumb=await toBlob(draw(im,168,200,w*.27,h*.04,w*.46,h*.58),'image/jpeg',.84);
+  const card=await toBlob(draw(im,720,Math.round(720*h/w)),'image/jpeg',.84);
+  return {full,thumb,card};
+}
+// foil layer -> the map the bottle uses: green = shine (paper dull, foil glossy), blue = metal
+async function makeFoil(im){
+  const c=draw(im,2048,Math.round(2048*LH/LW)), g=c.getContext('2d'), d=g.getImageData(0,0,c.width,c.height), a=d.data;
+  let bright=0; for(let i=0;i<a.length;i+=4) if(a[i]+a[i+1]+a[i+2]>384) bright++;
+  const invert = bright > a.length/8;          // foil is usually the smaller area; if most is light, gold must be the dark parts
+  for(let i=0;i<a.length;i+=4){ let m=(a[i]+a[i+1]+a[i+2])/765; if(invert) m=1-m; m=Math.min(1,Math.max(0,(m-.15)/.7));
+    a[i]=0; a[i+1]=Math.round(199*(1-m)+41*m); a[i+2]=Math.round(255*m); a[i+3]=255; }
+  g.putImageData(d,0,0); return toBlob(c,'image/png');
+}
+
+// ---------- add ----------
+let pending=null;
+const drop=$('#drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) startAdd(f); });
+$('#fileIn').onchange=e=>{ const f=e.target.files[0]; if(f) startAdd(f); e.target.value=''; };
+async function startAdd(file){
+  // the form stays closed until the label is ready, so nothing typed gets overwritten
+  cancelAdd(); busy(true); msg('#addMsg','Reading the label…','warn'); $('#addForm').classList.remove('hidden'); $('#addFields').classList.add('hidden');
+  try{
+    const im=await loadImage(file);
+    const ratio=W(im)/Hh(im), want=LW/LH;
+    pending={...(await makeLabel(im)), foil:null, name:cleanName(file.name.replace(/\.[a-z0-9]+$/i,'').replace(/[_-]+/g,' '))};
+    pending.urls={full:URL.createObjectURL(pending.full), thumb:URL.createObjectURL(pending.thumb)};
+    $('#addPrev').src=URL.createObjectURL(pending.card); $('#addName').value=pending.name;
+    const off=Math.abs(ratio/want-1);
+    if(off>0.03) msg('#addMsg',`This file is ${(W(im)/Hh(im)).toFixed(2)} wide for every 1 tall; labels are ${want.toFixed(2)}. It will be stretched to fit, so check the preview.`,'warn');
+    else msg('#addMsg','');
+    $('#addFields').classList.remove('hidden'); busy(false);
+    $('#addName').focus(); $('#addName').select();
+    previewPending();
+  }catch(e){ busy(false); pending=null; msg('#addMsg', e.message==='pdf' ? 'The PDF reader didn\'t load. Check your connection, or export the label as a PNG or JPG.' : 'That file couldn\'t be read as a label. Try a PNG or JPG.','bad'); }
+}
+$('#foilIn').onchange=async e=>{ const f=e.target.files[0]; if(!f||!pending) return;
+  const mine=pending; busy(true); msg('#addMsg','Reading the foil…','warn');
+  try{ const fb=await makeFoil(await loadImage(f)); busy(false); if(pending!==mine) return; pending.foil=fb; pending.urls.foil=URL.createObjectURL(pending.foil); msg('#addMsg','Foil added. Turn the bottle in the preview to see it catch the light.'); previewPending(); }
+  catch(err){ busy(false); msg('#addMsg','That foil file couldn\'t be read. Try a PNG or JPG.','bad'); } };
+function busy(on){ ['#addOk','#addPreview','#publish'].forEach(s=>$(s).disabled=on); if(!on) updatePub(); }
+function previewPending(){ if(!pending) return; sendPreview({name:$('#addName').value||'Preview', full:pending.urls.full, thumb:pending.urls.thumb, foil:pending.urls.foil||null}); }
+$('#addPreview').onclick=previewPending;
+$('#addCancel').onclick=cancelAdd;
+function cancelAdd(){ pending=null; $('#addForm').classList.add('hidden'); $('#foilIn').value=''; msg('#addMsg',''); }
+$('#addOk').onclick=()=>{
+  if(!pending) return;
+  const name=cleanName($('#addName').value);
+  if(!name){ msg('#addMsg','Give the label a name first.','bad'); return; }
+  if(work.some(L=>L.name.toLowerCase()===name.toLowerCase())){ msg('#addMsg','Another label already has that name. Pick a different one so people can tell them apart.','bad'); return; }
+  const id='s'+Date.now().toString(36);
+  work.push({id, name, origName:null, isNew:true, blobs:pending, full:pending.urls.full, thumb:pending.urls.thumb, foil:pending.urls.foil||null});
+  cancelAdd(); renderList(); updatePub();
+};
+
+// ---------- list ----------
+function renderList(){
+  const list=$('#list'); list.innerHTML='';
+  if(!work.length){ list.innerHTML='<p class="note">No labels yet. Add one above.</p>'; return; }
+  work.forEach((L,k)=>{
+    const row=document.createElement('div'); row.className='item'+(L.isNew?' new':'');
+    const src = L.isNew ? URL.createObjectURL(L.blobs.thumb) : forBottle(L.thumb);
+    row.innerHTML=`<img alt=""><div><input type="text" maxlength="40" aria-label="Label name"><div class="tags"></div></div>
+      <div class="acts"><button class="btn small" data-a="up" title="Move up" aria-label="Move up">↑</button><button class="btn small" data-a="dn" title="Move down" aria-label="Move down">↓</button><button class="btn small" data-a="pv">Preview</button><button class="btn small danger" data-a="rm">Remove</button></div>`;
+    row.querySelector('img').src=src;
+    const inp=row.querySelector('input'); inp.value=L.name;
+    inp.oninput=()=>{ L.name=cleanName(inp.value)||L.name; updatePub(); };
+    const tags=row.querySelector('.tags');
+    if(L.isNew) tags.insertAdjacentHTML('beforeend','<span class="tag new">New</span>');
+    if(L.foil) tags.insertAdjacentHTML('beforeend','<span class="tag foil">Foil</span>');
+    if(k===0) tags.insertAdjacentHTML('beforeend','<span class="tag">Shown first</span>');
+    row.querySelector('[data-a=up]').disabled=k===0; row.querySelector('[data-a=dn]').disabled=k===work.length-1;
+    row.querySelector('[data-a=up]').onclick=()=>{ [work[k-1],work[k]]=[work[k],work[k-1]]; renderList(); updatePub(); };
+    row.querySelector('[data-a=dn]').onclick=()=>{ [work[k+1],work[k]]=[work[k],work[k+1]]; renderList(); updatePub(); };
+    row.querySelector('[data-a=pv]').onclick=()=>sendPreview({name:L.name, full:L.isNew?L.full:forBottle(L.full), thumb:L.isNew?L.thumb:forBottle(L.thumb), foil:L.foil?(L.isNew?L.foil:forBottle(L.foil)):null});
+    row.querySelector('[data-a=rm]').onclick=()=>{
+      if(row.dataset.confirm!=='1'){ row.dataset.confirm='1'; const b=row.querySelector('[data-a=rm]'); b.textContent='Tap again to remove'; setTimeout(()=>{ if(b.isConnected){ row.dataset.confirm=''; b.textContent='Remove'; } },3000); return; }
+      work.splice(k,1); if(!L.isNew) removed.push(L.id); renderList(); updatePub(); };
+    list.append(row);
+  });
+}
+
+// ---------- publish ----------
+function changes(){
+  const out=[];
+  const added=work.filter(L=>L.isNew).length; if(added) out.push(`${added} new`);
+  const ren=work.filter(L=>!L.isNew && L.name!==L.origName).length; if(ren) out.push(`${ren} renamed`);
+  if(removed.length) out.push(`${removed.length} removed`);
+  const was=man.labels.map(L=>L.id).filter(id=>!removed.includes(id)), now=work.filter(L=>!L.isNew).map(L=>L.id);
+  if(was.join()!==now.join()) out.push('new order');
+  return out;
+}
+const dirty=()=>changes().length>0 || !!newProd;
+function updatePub(){
+  const c=changes();
+  const npReady = !newProd || (newProd.name && work.length>0);
+  $('#pubNote').textContent = newProd ? (newProd.name ? `New product “${newProd.name}”` + (work.length?` with ${work.length} label${work.length>1?'s':''}.`:'. Add a label to publish it.') : 'Name the new product, then add a label.')
+    : c.length ? 'Ready to publish: '+c.join(', ')+'.' : 'No changes yet.';
+  $('#publish').disabled = !(c.length || newProd) || !npReady;
+  $('#discard').disabled = !dirty();
+}
+$('#discard').onclick=()=>{ if(newProd){ $('#prodSel').disabled=false; openProduct(prod||products[0].folder); } else resetWork(); msg('#pubMsg',''); };
+
+$('#publish').onclick=async()=>{
+  const btn=$('#publish'); btn.disabled=true; $('#discard').disabled=true;
+  msg('#pubMsg','Publishing… keep this page open.','warn');
+  try{
+    let folder=prod, nowMan;
+    if(newProd){
+      folder=slugify(newProd.name);
+      if(!folder) throw new Error('name');
+      if(products.some(p=>p.folder===folder) || await readText(`${folder}/index.html`)!=null || await readText(`${folder}/labels.json`)!=null) throw new Error('taken');
+      nowMan={product:{key:folder,name:newProd.name,sub:newProd.sub||'500 mL',color:newProd.color},labels:[],removed:[],rev:0};
+    }else{
+      nowMan=await readJSON(`${folder}/labels.json`);
+      if(!nowMan || (nowMan.rev||0)!==(man.rev||0)) throw new Error('changed');
+    }
+    const files=[];
+    const labels=[];
+    for(const L of work){
+      if(L.isNew){
+        const b=L.blobs, base=`img/${L.id}`;
+        files.push({path:`${folder}/${base}.jpg`, b64:await b64blob(b.full)});
+        files.push({path:`${folder}/img/t${L.id}.jpg`, b64:await b64blob(b.thumb)});
+        files.push({path:`${folder}/img/c${L.id}.jpg`, b64:await b64blob(b.card)});
+        const e={id:L.id, name:L.name, full:`${base}.jpg`, thumb:`img/t${L.id}.jpg`, card:`img/c${L.id}.jpg`};
+        if(b.foil){ files.push({path:`${folder}/img/f${L.id}.png`, b64:await b64blob(b.foil)}); e.foil=`img/f${L.id}.png`; }
+        labels.push(e);
+      }else{
+        const {origName,isNew,blobs,...keep}=L; labels.push(keep);
+      }
+    }
+    nowMan.labels=labels;
+    nowMan.removed=[...new Set([...(nowMan.removed||[]),...removed])];
+    nowMan.rev=(nowMan.rev||0)+1;
+    nowMan.updated=new Date().toISOString();
+    files.push({path:`${folder}/labels.json`, b64:b64text(JSON.stringify(nowMan,null,1)+'\n')});
+    let what;
+    if(newProd){
+      const [viewer,gallery,pk]=await Promise.all([readText('product-template/index.html'),readText('product-template/labels/index.html'),readText('packaging/index.html')]);
+      if(!viewer||!gallery) throw new Error('template');
+      files.push({path:`${folder}/index.html`, b64:b64text(viewer)});
+      files.push({path:`${folder}/labels/index.html`, b64:b64text(gallery)});
+      files.push({path:'studio/products.json', b64:b64text(JSON.stringify([...products,{folder,name:newProd.name}],null,1)+'\n')});
+      if(pk){
+        const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+        const cardHtml=`    <a class="card" href="../${folder}/">
+      <div class="thumb"><img src="../${folder}/${labels[0].card}" alt="${esc(newProd.name)} label" width="560" height="540"></div>
+      <div class="info"><h2>${esc(newProd.name)}</h2><p>${esc(newProd.sub||'500 mL')}</p><span class="go">Open the bottle →</span></div>
+    </a>\n`;
+        const mark='    <!-- studio:new-cards';
+        const out = pk.includes(mark) ? pk.replace(mark, cardHtml+mark) : pk.replace('  </div>\n  <footer>', cardHtml+'  </div>\n  <footer>');
+        files.push({path:'packaging/index.html', b64:b64text(out)});
+      }
+      what=`Studio: new product ${newProd.name}`;
+    }else what=`Studio: ${folder} labels (${changes().join(', ')})`;
+    await commit(files, what);
+    const link=new URL(`../${folder}/`, location.href).href;
+    $('#pubMsg').innerHTML='<div class="msg good">Published. The site updates in about a minute or two. <a target="_blank" rel="noopener"></a></div>';
+    const a=$('#pubMsg a'); a.href=link; a.textContent='Open the live page';
+    if(newProd){ products.push({folder,name:newProd.name}); const o=document.createElement('option'); o.value=folder; o.textContent=newProd.name; $('#prodSel').append(o); $('#prodSel').value=folder; $('#npName').value=''; $('#npSub').value=''; }
+    newProd=null; $('#newProd').classList.add('hidden'); $('#prodSel').disabled=false;
+    prod=folder; man=nowMan; resetWork(); lastPreview=null;
+    setTimeout(()=>setPreview(`../${folder}/?studio=${Date.now()}`), 90000);
+  }catch(e){
+    msg('#pubMsg',
+      e.message==='changed' ? 'The labels for this bottle were changed somewhere else since you opened the studio, so nothing was published. Reload this page and make your change again.'
+      : e.message==='taken' ? 'There is already a product or page with that name. Try a slightly different name.'
+      : e.message==='name' ? 'The product name needs some letters or numbers in it.'
+      : e.message==='template' ? 'The starting page for new products is missing from the site, so nothing was published.'
+      : e.status===401||e.status===403 ? 'GitHub refused the save. Your key may have expired; use "Forget key" and set up a new one. Nothing was published.'
+      : e.status===409||e.status===422 ? 'Someone else saved at the same moment. Nothing was published. Press Publish again.'
+      : 'Publishing didn\'t finish (no internet, or GitHub had a hiccup). Nothing was changed on the site. Try again in a minute.', 'bad');
+    updatePub();
+  }
+};
+checkKey();
+</script>
+</body>
+</html>

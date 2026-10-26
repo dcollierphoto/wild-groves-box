@@ -1,0 +1,10 @@
+{
+ "product": {
+  "key": "new",
+  "name": "New product",
+  "sub": "500 mL",
+  "color": "#6f7d3c"
+ },
+ "labels": [],
+ "removed": []
+}

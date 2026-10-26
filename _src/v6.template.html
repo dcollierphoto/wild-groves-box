@@ -1,0 +1,262 @@
+<title>Olio Nuovo Bottle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Montserrat:wght@500;600&display=swap">
+<style>
+/* Layout: one screen. A studio sweep fills the page; name on top, bottle in the middle, one row of controls underneath. */
+:root{
+  --sweep-top:#f3f1ec; --sweep-bot:#dcd8cf; --ink:#26241f; --muted:#6f6a5e;
+  --foil:#a8822f; --chip:#ffffffcc; --chip-line:#00000014;
+  --display:'Oswald','Arial Narrow',sans-serif; --body:'Montserrat',system-ui,sans-serif;
+}
+html{box-sizing:border-box;height:100%;height:100dvh}body{height:100%}
+.stage{box-sizing:border-box}
+body{background:var(--sweep-bot);color:var(--ink);font-family:var(--body);overflow:hidden}
+.stage{position:relative;height:100%;display:grid;grid-template-rows:auto 1fr auto;
+  background:radial-gradient(120% 80% at 50% 30%,var(--sweep-top),var(--sweep-bot));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px}
+header{text-align:center;display:grid;gap:2px;z-index:2}
+h1{margin:0;font-family:var(--display);font-weight:600;font-size:clamp(22px,4vw,32px);letter-spacing:.06em;text-transform:uppercase;text-wrap:balance}
+h1 span{color:var(--foil)}
+.sub{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+#view{position:relative;min-height:0}
+.stage{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;display:block}
+canvas:active{cursor:grabbing}
+.hint{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:11px;color:var(--muted);letter-spacing:.08em;pointer-events:none;transition:opacity .6s}
+.bar{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;z-index:2}
+button{font:600 12px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink);background:var(--chip);
+  border:1px solid var(--chip-line);border-radius:999px;padding:11px 13px;cursor:pointer;backdrop-filter:blur(6px)}
+button[aria-pressed="true"]{border-color:var(--foil);color:var(--foil)}
+button:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
+.err{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px}
+.allp{justify-self:center;display:inline-flex;align-items:center;gap:6px;font:600 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;padding:8px 12px;border:1px solid var(--chip-line);border-radius:999px;margin-bottom:6px}
+.allp:hover{color:var(--foil);border-color:var(--foil)}
+.allp:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
+/* on-screen arrows: the same moves as the keyboard arrows */
+.turn{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:44px;height:44px;border-radius:50%;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);font:400 22px/1 var(--body);display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.turn:hover{color:var(--foil);border-color:var(--foil)}
+.turn:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
+.turn.l{left:calc(50% - 150px)} .turn.r{right:calc(50% - 150px)}
+.keys{display:inline-flex;gap:4px;align-items:center;margin-left:6px}
+kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid var(--chip-line);border-bottom-width:2px;border-radius:4px;background:var(--chip);font:600 10px/1 var(--body);color:var(--ink)}
+@media (hover:none){ .keys{display:none} }
+@media (max-width:720px){ .turn{width:38px;height:38px;font-size:19px} .turn.l{left:6px} .turn.r{right:6px} }
+</style>
+
+<div class="stage">
+  <header>
+    <a class="allp" href="../packaging/">← All products</a>
+    <h1>Wild Groves <span>Olio Nuovo</span></h1>
+    <div class="sub">2026 Harvest · 500 mL</div>
+  </header>
+  <div id="view">
+      <div class="hint" id="hint">Drag to turn · pinch or scroll to zoom</div>
+  </div>
+  <div class="bar">
+    <button id="spin" aria-pressed="false">Spin</button>
+    <button id="left" title="Left arrow key">← Left</button>
+    <button id="front">Front</button>
+    <button id="right" title="Right arrow key">Right →</button>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
+const TEX = __TEX_JSON__;
+const view = document.getElementById('view');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let renderer;
+try { renderer = new THREE.WebGLRenderer({antialias:true, alpha:true}); }
+catch(e){ view.insertAdjacentHTML('beforeend','<div class="err">This viewer needs WebGL, which this browser has turned off.</div>'); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.42;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+view.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(24, 1, 0.1, 100);
+
+// Studio environment: black room, one big overhead diffusion screen that falls off softly,
+// a graded card on the right for a soft edge, nothing on the left so that side stays dark,
+// and a dim low card in front that gives the foil a hint of gold.
+function grad(stops, w=64, h=256, radial=false){
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
+  const gr = radial ? g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2) : g.createLinearGradient(0,0,0,h);
+  stops.forEach(([o,v])=>gr.addColorStop(o,`rgb(${v},${v},${v})`)); g.fillStyle=gr; g.fillRect(0,0,w,h);
+  return new THREE.CanvasTexture(c);
+}
+function studio(){
+  const s = new THREE.Scene();
+  s.add(new THREE.Mesh(new THREE.SphereGeometry(40,32,16), new THREE.MeshBasicMaterial({color:0x050505, side:THREE.BackSide})));
+  const card=(w,h,tex,k,warm,pos,look)=>{ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h), new THREE.MeshBasicMaterial({map:tex, color:new THREE.Color(1,warm,warm*0.96).multiplyScalar(k), side:THREE.DoubleSide}));
+    m.position.set(...pos); m.lookAt(...look); s.add(m); return m; };
+  // overhead scrim, slightly forward of the bottle, bright centre feathering to nothing
+  card(22,22, grad([[0,255],[0.35,200],[0.7,60],[1,0]],256,256,true), 7.5, 0.98, [0,11,2], [0,0,2]);
+  // right graded card: bright at the top, fading to black by the floor
+  card(9,16, grad([[0,255],[0.45,110],[1,0]]), 2.2, 0.97, [10,4,1], [0,4,0]);
+  // faint rim behind the left shoulder so the dark side still has a shape
+  card(3,10, grad([[0,180],[0.6,40],[1,0]]), 0.35, 1, [-7,5,-10], [0,4,0]);
+  // soft left fill, about a third of the right side, so the shadow side holds detail
+  card(9,16, grad([[0,255],[0.45,110],[1,0]]), 0.7, 0.97, [-10,4,1], [0,4,0]);
+  // dim low card in front, the foil's hint of gold
+  card(18,6, grad([[0,0],[0.5,160],[1,255]]), 0.5, 0.94, [0,-3,14], [0,0,0]);
+  return s;
+}
+const pmrem = new THREE.PMREMGenerator(renderer);
+const env = pmrem.fromScene(studio(), 0.03).texture;
+scene.environment = env;
+
+// A small light that orbits when "Catch the foil" is on, so the gold flashes.
+const sweep = new THREE.PointLight(0xfff2d8, 0, 20, 1.6);
+scene.add(sweep);
+
+// Bottle profile traced from the studio photo (pixels, 148.9 px per inch). r = radius, h = height from the base.
+const PX = 1/148.9;
+const bottle = new THREE.Group(); scene.add(bottle);
+const V = (r,h)=>new THREE.Vector2(r*PX,h*PX);
+const glassPts = [[0,1],[118,0],[150,3],[165,8],[171,16],[173,28],[173,1254],[172,1258],[170.5,1264],[168.5,1270],[165.5,1276],[158.5,1282],[149.5,1288],[139.5,1294],[129.5,1300],[118.5,1306],[108.5,1312],[99.5,1318],[94.5,1324],[92.5,1330],[91.5,1336],[90.5,1342],[89.5,1348],[89,1360],[88,1404],[0,1404]].map(p=>V(...p));
+// Glass and cap take their look straight from the studio photo. The bottle is round and the
+// lights stay put, so each spot on the glass shows what the photo shows at the same height and
+// the same angle to the camera. Rows under the label were filled from the glass above and below it.
+const photo = new THREE.TextureLoader().load(TEX.glass); photo.colorSpace = THREE.SRGBColorSpace; photo.anisotropy = renderer.capabilities.getMaxAnisotropy();
+const camLocal = new THREE.Vector3();
+const photoMat = new THREE.ShaderMaterial({
+  uniforms:{ uPhoto:{value:photo}, uCam:{value:camLocal}, uGlass:{value:1.0} },
+  vertexShader:`varying vec3 vL; void main(){ vL=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`uniform sampler2D uPhoto; uniform vec3 uCam; uniform float uGlass; varying vec3 vL;
+    void main(){
+      const float PXI = 148.9;
+      float az = atan(vL.x, vL.z) - atan(uCam.x, uCam.z);
+      az = mod(az + 3.14159265, 6.2831853) - 3.14159265;
+      az = clamp(az, -1.53, 1.53);
+      float r = length(vL.xz)*PXI*0.982;
+      float row = clamp(1834.0 - vL.y*PXI, 186.0, 1824.0);
+      float col = 751.5 + r*sin(az);
+      vec2 uv = vec2((col-540.0)/425.0, 1.0 - (row-150.0)/1710.0);
+      vec4 c = texture2D(uPhoto, uv);
+      // cap ribs: shaded from the bottle's own angle, so they turn with it
+      float h = vL.y*PXI;
+      if(h > 1503.0 && h < 1641.0){
+        float a = atan(vL.x, vL.z);
+        float rib = cos(a*64.0);
+        float edge = smoothstep(1503.0,1512.0,h)*(1.0-smoothstep(1632.0,1641.0,h));
+        float facing = cos(az);
+        c.rgb *= 1.0 + edge*(0.55*rib*facing + 0.25*max(rib,0.0));
+      }
+      gl_FragColor = c;
+      #include <colorspace_fragment>
+    }`
+});
+photoMat.toneMapped = false;
+const glass = new THREE.Mesh(new THREE.LatheGeometry(glassPts,160), photoMat);
+bottle.add(glass);
+
+// Screw cap with ribs on the upper part
+const capPts=[[0,1398],[89,1398],[91.2,1402],[91.2,1644],[89.5,1648],[85,1652],[76.5,1656],[62,1660],[28,1664],[0,1666]].map(p=>V(...p));
+const capGeo=new THREE.LatheGeometry(capPts,240);
+{ const p=capGeo.attributes.position, v=new THREE.Vector3();
+  for(let i=0;i<p.count;i++){ v.fromBufferAttribute(p,i); const h=v.y/PX; if(h>1505&&h<1640){ const r=Math.hypot(v.x,v.z); if(r<0.5*PX) continue; const a=Math.atan2(v.x,v.z); const k=1+0.012*Math.max(0,Math.cos(a*64)); v.x*=k; v.z*=k; p.setXYZ(i,v.x,v.y,v.z);} }
+  capGeo.computeVertexNormals(); }
+const capMat = photoMat.clone(); capMat.uniforms.uPhoto.value = photo; capMat.uniforms.uCam.value = camLocal; capMat.uniforms.uGlass.value = 0.0; capMat.toneMapped = false;
+bottle.add(new THREE.Mesh(capGeo, capMat));
+
+// Label: 7.0 x 6.5 in, wrapped around the body, front panel facing the camera.
+const loader = new THREE.TextureLoader();
+const aniso = renderer.capabilities.getMaxAnisotropy();
+const map = loader.load(TEX.label); map.colorSpace=THREE.SRGBColorSpace; map.anisotropy=aniso;
+const rm = loader.load(TEX.rm); rm.anisotropy=aniso;
+const lr = 173.6*PX, wrap = 7.0/lr*1.0;
+const labelGeo = new THREE.CylinderGeometry(lr, lr, 6.4967, 200, 1, true, -wrap/2, wrap);
+const label = new THREE.Mesh(labelGeo, new THREE.MeshPhysicalMaterial({map, roughnessMap:rm, metalnessMap:rm, roughness:1, metalness:1, envMapIntensity:1.5}));
+label.position.y = (206*PX) + 6.4967/2;
+bottle.add(label);
+
+// Soft contact shadow
+const sc=document.createElement('canvas'); sc.width=sc.height=256; const g=sc.getContext('2d');
+const grd=g.createRadialGradient(128,128,10,128,128,128); grd.addColorStop(0,'rgba(0,0,0,.55)'); grd.addColorStop(.45,'rgba(0,0,0,.22)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+g.fillStyle=grd; g.fillRect(0,0,256,256);
+const shadow=new THREE.Mesh(new THREE.PlaneGeometry(4.2,4.2), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc), transparent:true, depthWrite:false}));
+shadow.rotation.x=-Math.PI/2; shadow.position.y=0.002; scene.add(shadow);
+
+const H = 1666*PX, CY = H*0.5;
+bottle.position.y = 0;
+
+// Camera orbit state
+let yaw=0, pitch=0.08, dist=34, vel=0, spinning=false, foil=false, t0=performance.now(), idle=0;
+const target={yaw:null};
+const spinBtn=document.getElementById('spin'); spinBtn.setAttribute('aria-pressed',String(spinning));
+function place(){
+  const w=view.clientWidth, h=view.clientHeight;
+  renderer.setSize(w,h,false); camera.aspect=w/h;
+  const fitH = H*1.12/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
+  const fitW = (2.32*1.9/2)/(Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.aspect);
+  baseDist = Math.max(fitH, fitW);
+  camera.updateProjectionMatrix();
+}
+let baseDist=34, zoom=1, panY=0, mid0=0;
+// how far up or down the view may move: none at full view, most of the bottle when zoomed in
+const panMax=()=>Math.max(0,(1-zoom))*H*0.62;
+new ResizeObserver(place).observe(view); place();
+
+// Drag, wheel and pinch
+const pts=new Map(); let lastX=0,lastY=0,pinch0=0,zoom0=1, dragged=false;
+const cv=renderer.domElement;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId); pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); lastX=e.clientX; lastY=e.clientY; vel=0; target.yaw=null; idle=0;
+  if(pts.size===2){const [a,b]=[...pts.values()]; pinch0=Math.hypot(a.x-b.x,a.y-b.y); zoom0=zoom; mid0=(a.y+b.y)/2;} hideHint();});
+cv.addEventListener('pointermove',e=>{ if(!pts.has(e.pointerId)) return; pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===2){const [a,b]=[...pts.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); zoom=THREE.MathUtils.clamp(zoom0*pinch0/d,0.45,1.4);
+    const m=(a.y+b.y)/2; panY+=(m-mid0)*panScale(); mid0=m; return;}
+  const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+  vel = -dx*0.008; yaw += vel;
+  // zoomed in: dragging up and down moves along the bottle; at full view it tilts
+  if(zoom<0.92) panY += dy*panScale(); else pitch=THREE.MathUtils.clamp(pitch+dy*0.005,-0.25,0.6); });
+function panScale(){ return (H*1.12*zoom)/Math.max(1,view.clientHeight); }
+const up=e=>{pts.delete(e.pointerId); const r=[...pts.values()][0]; if(r){lastX=r.x; lastY=r.y;}};
+cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{e.preventDefault(); zoom=THREE.MathUtils.clamp(zoom*Math.exp(e.deltaY*0.001),0.45,1.4); hideHint();},{passive:false});
+function hideHint(){document.getElementById('hint').style.opacity=0;}
+
+spinBtn.onclick=()=>{spinning=!spinning; spinBtn.setAttribute('aria-pressed',String(spinning)); target.yaw=null;};
+const turnTo=a=>{ spinning=false; spinBtn.setAttribute('aria-pressed','false'); vel=0; const full=Math.PI*2; let d=((a-yaw)%full+full*1.5)%full-full/2; target.yaw=yaw+d; };
+document.getElementById('front').onclick=()=>{turnTo(0); pitch=0.08;};
+// side panels: the centre of each side panel of the flat label, as an angle around the bottle
+const sideAngle = u => (u-0.5)*wrap;
+document.getElementById('left').onclick=()=>{turnTo(sideAngle(0.14)); pitch=0.08;};
+document.getElementById('right').onclick=()=>{turnTo(sideAngle(0.87)); pitch=0.08;};
+// keyboard: left and right arrows step between the Left, Front and Right views
+const stops=[sideAngle(0.14), 0, sideAngle(0.87)];
+function nearestStop(){ const a=target.yaw!==null?target.yaw:yaw, F=Math.PI*2; let best=0,bd=9;
+  stops.forEach((s,i)=>{ const d=Math.abs(((a-s)%F+F*1.5)%F-F/2); if(d<bd){bd=d;best=i;} }); return best; }
+function stepView(dir){ const i=(nearestStop()+(dir>0?1:2))%3; turnTo(stops[i]); pitch=0.08; hideHint(); }
+addEventListener('keydown',e=>{
+  if(e.target.closest && e.target.closest('input,textarea,select')) return;
+  if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+    e.preventDefault(); const i=(nearestStop()+(e.key==='ArrowRight'?1:2))%3;
+    turnTo(stops[i]); pitch=0.08; hideHint();
+  }
+});
+
+function frame(now){
+  const dt=Math.min(0.05,(now-t0)/1000); t0=now;
+  if(pts.size===0){
+    if(target.yaw!==null){ yaw+= (target.yaw-yaw)*Math.min(1,dt*6); if(Math.abs(target.yaw-yaw)<1e-3){yaw=target.yaw; target.yaw=null;} }
+    else { yaw+=vel; vel*=Math.pow(0.04,dt); if(spinning && Math.abs(vel)<0.002) yaw += dt*0.45; }
+  }
+  const d=baseDist*zoom;
+  const pm=panMax(); panY=THREE.MathUtils.clamp(panY,-pm,pm);
+  const lookY = CY*(0.92+0.1*(1-zoom)) + panY;
+  bottle.rotation.y = -yaw;
+  camera.position.set(0, lookY+Math.sin(pitch)*d, Math.cos(pitch)*d);
+  camera.lookAt(0,lookY,0);
+  bottle.updateMatrixWorld(); camLocal.copy(camera.position); bottle.worldToLocal(camLocal);
+  // foil light sweeps across the front of the bottle, from the camera's side
+  const s=now/1000; sweep.intensity = foil? 35:0;
+  const la = Math.sin(s*1.6)*0.9;
+  sweep.position.set(Math.sin(la)*5, CY+1.2*Math.sin(s*1.1), Math.cos(la)*5);
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
