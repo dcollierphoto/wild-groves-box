@@ -190,6 +190,7 @@ if(canEdit && window.Sortable) Sortable.create(grid,{ animation:180, delay:220, 
   onEnd(){ const vis=[...grid.children].map(c=>+c.dataset.i); order=[...vis, ...order.filter(k=>!vis.includes(k))]; save(); render(); } });
 // brings hidden labels back without touching the custom order
 reset.onclick=()=>{ hidden=[]; save(); render(); };
+if(KEY && !canEdit) say('This browser has a studio key, but GitHub didn\'t accept it, so reordering is off. Open the Label Studio to set a new key.','bad');
 if(canEdit) document.querySelector('.lede').textContent='Drag a label to set the order everyone sees, and the × hides one. Click a label to see it on the bottle; double-click it, or use the ⤢ button, to see it full size.';
 
 // full-size view
