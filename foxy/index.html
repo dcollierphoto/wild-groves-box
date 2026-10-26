@@ -25,6 +25,8 @@ header{text-align:center;display:grid;gap:2px;z-index:2}
 h1{margin:0;font-family:var(--display);font-weight:600;font-size:clamp(22px,4vw,32px);letter-spacing:.06em;text-transform:uppercase;text-wrap:balance}
 h1 span{color:var(--foil)}
 .sub{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.lname{margin-top:6px;font:600 13px/1.2 var(--body);color:var(--ink)}
+.lname em{font-style:normal;color:var(--foil)}
 #view{position:relative;min-height:0}
 .stage{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;display:block}
@@ -69,6 +71,7 @@ button:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
     <a class="allp" href="../packaging/">← All products</a>
     <h1>Wild Groves <span>Foxy</span></h1>
     <div class="sub">Highest polyphenol · 500 mL</div>
+    <div class="lname" id="lname" aria-live="polite"></div>
   </header>
   <div class="viewrow">
     <div id="view">
@@ -235,13 +238,19 @@ addEventListener('pointerup',()=>{ const d=dragState; if(!d) return; dragState=n
   else pick(d.i); });
 addEventListener('pointercancel',()=>{ if(dragState){ dragState=null; render(); } });
 const visible=()=>order.filter(i=>!hidden.includes(i));
-function pick(i){ current=i; label.material.map=maps[i]; label.material.needsUpdate=true; render(); }
+// each label has a name people can use when they say which one they like; the page link carries it too
+const NAMES=["Painted Fox", "Harvest Branch", "Pink Panel", "Oil Splash", "Black Foxy", "Hand-Lettered", "Golden", "Painted Branch"];
+const slug=i=>NAMES[i].toLowerCase().replace(/[^a-z0-9]+/g,'-');
+function pick(i){ current=i; label.material.map=maps[i]; label.material.needsUpdate=true;
+  document.getElementById('lname').innerHTML=`Label ${i+1} · <em>${NAMES[i]}</em>`;
+  try{ history.replaceState(null,'','#'+slug(i)); }catch(e){}
+  render(); }
 function render(){
   thumbsEl.innerHTML='';
   visible().forEach(i=>{
     const b=document.createElement('button'); b.type='button'; b.className='thumb'; b.dataset.i=i;
-    b.setAttribute('aria-pressed',String(i===current)); b.setAttribute('aria-label','Label '+(i+1));
-    b.innerHTML=`<img alt="" src="${TEX.thumbs[i]}" draggable="false"><b>${i+1}</b><i role="button" tabindex="0" aria-label="Hide label ${i+1}" title="Hide this one">×</i>`;
+    b.setAttribute('aria-pressed',String(i===current)); b.setAttribute('aria-label','Label '+(i+1)+', '+NAMES[i]);
+    b.innerHTML=`<img alt="" src="${TEX.thumbs[i]}" draggable="false"><b>${i+1}</b><i role="button" tabindex="0" aria-label="Hide ${NAMES[i]}" title="Hide this one">×</i>`; b.title=NAMES[i];
     const x=b.querySelector('i'); const hide=e=>{ e.stopPropagation(); if(visible().length<=1) return; hidden.push(i); save();
       if(i===current) pick(visible()[0]); else render(); };
     x.onclick=hide; x.onkeydown=e=>{ if(e.key==='Enter'||e.key===' ') hide(e); };
@@ -256,7 +265,8 @@ function render(){
   showAll.textContent = hidden.length ? `Show hidden (${hidden.length})` : 'Reset order';
 }
 showAll.onclick=()=>{ hidden=[]; order=[...all]; save(); render(); };
-current = visible()[0];
+{ const h=location.hash.slice(1), k=NAMES.findIndex((_,j)=>slug(j)===h);
+  if(k>=0){ hidden=hidden.filter(x=>x!==k); current=k; } else current = visible()[0]; }
 pick(current);
 
 // Camera orbit state
