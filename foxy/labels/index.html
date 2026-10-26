@@ -72,7 +72,7 @@ h1 span{color:var(--pink)}
   <h1>Foxy <span>Labels</span></h1>
   <p class="lede">Click a label to see it on the bottle. Double-click it, or use the ⤢ button, to see it full size and arrow through them all. Drag a label to change the order, and the × hides one. Your order is remembered on this device and also used on the bottle page.</p>
   <div class="grid" id="grid"></div>
-  <p style="margin-top:22px"><button type="button" class="pill" id="reset" hidden>Show all and reset order</button></p>
+  <p style="margin-top:22px"><button type="button" class="pill" id="reset" hidden>Show hidden labels</button></p>
 </main>
 
 <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Full-size label">
@@ -124,12 +124,13 @@ function render(){
     c.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); location.href='../?v='+N+'#'+slug(i); } else if(e.key===' '){ e.preventDefault(); open(i); } };
     grid.append(c);
   });
-  reset.hidden = !hidden.length && order.every((v,k)=>v===k);
+  reset.hidden = !hidden.length; reset.textContent = `Show hidden labels (${hidden.length})`;
 }
 Sortable.create(grid,{ animation:180, delay:220, delayOnTouchOnly:true, filter:'.x,.zoom', preventOnFilter:false,
   ghostClass:'ghost', chosenClass:'chosen', forceFallback:true, fallbackTolerance:4,
   onEnd(){ const vis=[...grid.children].map(c=>+c.dataset.i); order=[...vis, ...order.filter(k=>!vis.includes(k))]; save(); render(); } });
-reset.onclick=()=>{ hidden=[]; order=[...all]; save(); render(); };
+// brings hidden labels back without touching the custom order
+reset.onclick=()=>{ hidden=[]; save(); render(); };
 
 // full-size view
 const lb=document.getElementById('lb'), lbImg=document.getElementById('lbImg');
