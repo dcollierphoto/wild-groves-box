@@ -44,7 +44,8 @@ button:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
 .picks{position:absolute;right:0;top:0;bottom:0;z-index:2;display:flex;flex-direction:column;gap:10px;justify-content:safe center;align-items:center;overflow:auto;padding:4px 2px}
 .picks span{font:600 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .thumbs{display:flex;flex-direction:column;gap:8px;align-items:center}
-.thumb{position:relative;padding:0;width:50px;aspect-ratio:140/282;border-radius:6px;overflow:hidden;border:2px solid var(--chip-line);background:var(--chip);flex:0 0 auto;cursor:pointer}
+.thumb.dragging{opacity:.75;transform:scale(1.08);z-index:3;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.thumb{touch-action:none;transition:transform .12s;position:relative;padding:0;width:50px;aspect-ratio:140/282;border-radius:6px;overflow:hidden;border:2px solid var(--chip-line);background:var(--chip);flex:0 0 auto;cursor:pointer}
 .thumb img{display:block;width:100%;height:100%;object-fit:cover}
 .thumb b{position:absolute;right:4px;bottom:4px;font:600 10px/1 var(--body);background:var(--chip);color:var(--ink);border-radius:999px;padding:3px 6px}
 .thumb i{position:absolute;top:3px;right:3px;width:20px;height:20px;display:grid;place-items:center;font:600 14px/1 var(--body);font-style:normal;color:var(--ink);background:var(--chip);border-radius:50%;opacity:.85}
@@ -212,29 +213,50 @@ shadow.rotation.x=-Math.PI/2; shadow.position.y=0.002; scene.add(shadow);
 const H = 1666*PX, CY = H*0.5;
 bottle.position.y = 0;
 
-// Label versions: tap a thumbnail to put it on the bottle; the small x hides it.
-// Hidden versions are remembered in this browser only; "Show hidden" brings them back.
+// Label versions: tap a thumbnail to put it on the bottle, drag it to reorder, and the small x hides it.
+// Order and hidden versions are remembered in this browser only; the link under "Labels" resets them.
 const thumbsEl=document.querySelector('.thumbs'), showAll=document.querySelector('.showall');
-let hidden=[]; try{ hidden=JSON.parse(localStorage.getItem('foxy-hidden')||'[]'); }catch(e){}
+const N=TEX.thumbs.length, all=[...Array(N).keys()];
+const load=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return Array.isArray(v)?v:d; }catch(e){ return d; } };
+let hidden=load('foxy-hidden',[]).filter(i=>i>=0&&i<N);
+let order=load('foxy-order',all).filter(i=>i>=0&&i<N); all.forEach(i=>{ if(!order.includes(i)) order.push(i); });
 let current=0;
-const save=()=>{ try{ localStorage.setItem('foxy-hidden', JSON.stringify(hidden)); }catch(e){} };
+const save=()=>{ try{ localStorage.setItem('foxy-hidden',JSON.stringify(hidden)); localStorage.setItem('foxy-order',JSON.stringify(order)); }catch(e){} };
+let dragState=null;
+// moves are followed on the whole window, because moving the thumbnail in the list would drop a captured pointer
+addEventListener('pointermove',e=>{ const d=dragState; if(!d) return;
+  if(!d.drag && Math.hypot(e.clientX-d.sx,e.clientY-d.sy)>8){ d.drag=true; d.b.classList.add('dragging'); }
+  if(!d.drag) return; e.preventDefault();
+  const col=getComputedStyle(thumbsEl).flexDirection==='column', p=col?e.clientY:e.clientX;
+  const next=[...thumbsEl.children].find(c=>{ if(c===d.b) return false; const r=c.getBoundingClientRect(); return p < (col? r.top+r.height/2 : r.left+r.width/2); });
+  if(next!==d.b.nextSibling && next!==d.b) thumbsEl.insertBefore(d.b,next||null); },{passive:false});
+addEventListener('pointerup',()=>{ const d=dragState; if(!d) return; dragState=null;
+  if(d.drag){ const vis=[...thumbsEl.children].map(c=>+c.dataset.i); order=[...vis, ...order.filter(k=>!vis.includes(k))]; save(); render(); }
+  else pick(d.i); });
+addEventListener('pointercancel',()=>{ if(dragState){ dragState=null; render(); } });
+const visible=()=>order.filter(i=>!hidden.includes(i));
 function pick(i){ current=i; label.material.map=maps[i]; label.material.needsUpdate=true; render(); }
 function render(){
   thumbsEl.innerHTML='';
-  TEX.thumbs.forEach((src,i)=>{
-    if(hidden.includes(i)) return;
-    const b=document.createElement('button'); b.type='button'; b.className='thumb'; b.setAttribute('aria-pressed',String(i===current)); b.setAttribute('aria-label','Label '+(i+1));
-    b.innerHTML=`<img alt="" src="${src}"><b>${i+1}</b><i role="button" tabindex="0" aria-label="Hide label ${i+1}" title="Hide this one">×</i>`;
-    b.onclick=e=>{ if(e.target.tagName==='I') return; pick(i); };
-    const x=b.querySelector('i'); const hide=e=>{ e.stopPropagation(); if(TEX.thumbs.length-hidden.length<=1) return; hidden.push(i); save();
-      if(i===current){ const n=TEX.thumbs.findIndex((_,k)=>!hidden.includes(k)); pick(n); } else render(); };
+  visible().forEach(i=>{
+    const b=document.createElement('button'); b.type='button'; b.className='thumb'; b.dataset.i=i;
+    b.setAttribute('aria-pressed',String(i===current)); b.setAttribute('aria-label','Label '+(i+1));
+    b.innerHTML=`<img alt="" src="${TEX.thumbs[i]}" draggable="false"><b>${i+1}</b><i role="button" tabindex="0" aria-label="Hide label ${i+1}" title="Hide this one">×</i>`;
+    const x=b.querySelector('i'); const hide=e=>{ e.stopPropagation(); if(visible().length<=1) return; hidden.push(i); save();
+      if(i===current) pick(visible()[0]); else render(); };
     x.onclick=hide; x.onkeydown=e=>{ if(e.key==='Enter'||e.key===' ') hide(e); };
+    x.onpointerdown=e=>e.stopPropagation();
+    // press and move to drag; a press without moving picks the label
+    b.onpointerdown=e=>{ if(e.button>0) return; e.preventDefault(); dragState={b,i,sx:e.clientX,sy:e.clientY,drag:false}; };
+    b.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(i); } };
     thumbsEl.append(b);
   });
-  showAll.hidden=hidden.length===0; showAll.textContent=`Show hidden (${hidden.length})`;
+  const moved=order.some((v,k)=>v!==k);
+  showAll.hidden=!hidden.length && !moved;
+  showAll.textContent = hidden.length ? `Show hidden (${hidden.length})` : 'Reset order';
 }
-showAll.onclick=()=>{ hidden=[]; save(); render(); };
-current = TEX.thumbs.findIndex((_,k)=>!hidden.includes(k)); if(current<0){hidden=[];current=0;}
+showAll.onclick=()=>{ hidden=[]; order=[...all]; save(); render(); };
+current = visible()[0];
 pick(current);
 
 // Camera orbit state
@@ -291,7 +313,7 @@ addEventListener('keydown',e=>{
   }
   else if((e.key==='ArrowUp'||e.key==='ArrowDown') && typeof pick==='function'){
     // up and down arrows flip through the label versions still showing
-    e.preventDefault(); const vis=TEX.thumbs.map((_,k)=>k).filter(k=>!hidden.includes(k));
+    e.preventDefault(); const vis=visible();
     const j=vis.indexOf(current); pick(vis[(j+(e.key==='ArrowDown'?1:vis.length-1))%vis.length]);
   }
 });
