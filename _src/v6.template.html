@@ -300,12 +300,13 @@ function startTour(){
   const F=Math.PI*2, y0=((yaw%F)+F*1.5)%F-F/2; yaw=y0;
   const L=sideAngle(0.14), R=sideAngle(0.87);
   TL={
-    yaw:   [[0,y0],[1.0,0],[7.4,0],[9.0,L],[9.9,L],[11.7,R],[12.6,R],[14.0,0]],
-    zoom:  [[0,zoom],[2.2,0.5],[5.6,0.5],[7.0,1],[14.2,1]],
-    panY:  [[0,panY],[2.2,1.5],[2.6,1.5],[5.7,-1.4],[7.0,0],[14.2,0]],
-    pitch: [[0,pitch],[1.0,0.08],[14.2,0.08]],
-    camX:  [[0,0],[14.2,0]], cap:[[0,0],[14.2,0]], tilt:[[0,0],[14.2,0]], plate:[[0,0],[14.2,0]],
-    head:  [[0,0],[14.2,0]], tail:[[0,0],[14.2,0]], pool:[[0,0],[14.2,0]],
+    // same pace as the first version, with a quick start and short holds on each side
+    yaw:   [[0,y0],[1.6,0],[7.9,0],[10.4,L],[11.3,L],[13.8,R],[14.7,R],[17.2,0]],
+    zoom:  [[0,zoom],[2.4,0.5],[6.4,0.5],[7.9,1],[17.4,1]],
+    panY:  [[0,panY],[2.4,1.5],[3.1,1.5],[6.5,-1.4],[7.9,0],[17.4,0]],
+    pitch: [[0,pitch],[1.6,0.08],[17.4,0.08]],
+    camX:  [[0,0],[17.4,0]], cap:[[0,0],[17.4,0]], tilt:[[0,0],[17.4,0]], plate:[[0,0],[17.4,0]],
+    head:  [[0,0],[17.4,0]], tail:[[0,0],[17.4,0]], pool:[[0,0],[17.4,0]],
   };
   tourStart=performance.now(); tourT=0; tourBtn.setAttribute('aria-pressed','true');
 }
@@ -317,7 +318,7 @@ function stopTour(){
 }
 function tourStep(now){
   const t=(now-tourStart)/1000; tourT=t;
-  if(t>14.1){ stopTour(); return; }
+  if(t>17.3){ stopTour(); return; }
   yaw=at(TL.yaw,t); zoom=at(TL.zoom,t); panY=at(TL.panY,t); pitch=at(TL.pitch,t); camX=at(TL.camX,t);
   const cap=at(TL.cap,t), k=at(TL.tilt,t), pl=at(TL.plate,t), head=at(TL.head,t), tail=at(TL.tail,t), pk=at(TL.pool,t);
   // cap lifts straight up and away; the neck and pour insert show underneath
