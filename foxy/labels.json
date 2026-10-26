@@ -96,8 +96,15 @@
    "full": "img/13.webp",
    "thumb": "img/t13.webp",
    "card": "img/c13.webp"
+  },
+  {
+   "id": "14",
+   "name": "Pink Panel Ripening",
+   "full": "img/14.webp",
+   "thumb": "img/t14.webp",
+   "card": "img/c14.webp"
   }
  ],
  "removed": [],
- "rev": 5
+ "rev": 6
 }
