@@ -279,6 +279,22 @@ document.getElementById('front').onclick=()=>{turnTo(0); pitch=0.08;};
 const sideAngle = u => (u-0.5)*wrap;
 document.getElementById('left').onclick=()=>{turnTo(sideAngle(0.14)); pitch=0.08;};
 document.getElementById('right').onclick=()=>{turnTo(sideAngle(0.87)); pitch=0.08;};
+// keyboard: left and right arrows step between the Left, Front and Right views
+const stops=[sideAngle(0.14), 0, sideAngle(0.87)];
+function nearestStop(){ const a=target.yaw!==null?target.yaw:yaw, F=Math.PI*2; let best=0,bd=9;
+  stops.forEach((s,i)=>{ const d=Math.abs(((a-s)%F+F*1.5)%F-F/2); if(d<bd){bd=d;best=i;} }); return best; }
+addEventListener('keydown',e=>{
+  if(e.target.closest && e.target.closest('input,textarea,select')) return;
+  if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+    e.preventDefault(); const i=(nearestStop()+(e.key==='ArrowRight'?1:2))%3;
+    turnTo(stops[i]); pitch=0.08; hideHint();
+  }
+  else if((e.key==='ArrowUp'||e.key==='ArrowDown') && typeof pick==='function'){
+    // up and down arrows flip through the label versions still showing
+    e.preventDefault(); const vis=TEX.thumbs.map((_,k)=>k).filter(k=>!hidden.includes(k));
+    const j=vis.indexOf(current); pick(vis[(j+(e.key==='ArrowDown'?1:vis.length-1))%vis.length]);
+  }
+});
 
 function frame(now){
   const dt=Math.min(0.05,(now-t0)/1000); t0=now;
