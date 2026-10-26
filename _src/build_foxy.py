@@ -7,7 +7,7 @@ import json, os
 A='/mnt/user-data/attachments/241b421a-0ea5-57db-b0a6-97921a4abd10/'
 REPO='/home/claude/wild-groves-box/foxy'
 LABELS=[('02576135','Painted Fox'),('1f51367f','Harvest Branch'),('61e68d24','Pink Panel'),('017af5d8','Oil Splash'),
-        ('20a3e28f','Black Foxy'),('a3c6823d','Hand-Lettered'),('ae378c09','Golden'),('c4711013','Painted Branch'),('8dacbfe6','Olive Row'),('5b145c1d','Big Olives'),('3cd78491','Fire Fox'),('53c9ed9d','Painted Fox Red')]
+        ('20a3e28f','Black Foxy'),('a3c6823d','Hand-Lettered'),('ae378c09','Golden'),('c4711013','Painted Branch'),('8dacbfe6','Olive Row'),('5b145c1d','Big Olives'),('3cd78491','Fire Fox'),('53c9ed9d','Painted Fox Red'),('9a2ad6a5','Ripening Branch')]
 os.makedirs(f'{REPO}/img',exist_ok=True)
 mpath=f'{REPO}/labels.json'
 man=json.load(open(mpath)) if os.path.exists(mpath) else {}
