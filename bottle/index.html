@@ -59,14 +59,13 @@ kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 
     <div class="sub">2026 Harvest · 500 mL</div>
   </header>
   <div id="view">
-    <button type="button" class="turn l" aria-label="Turn left (left arrow key)" title="Turn left  ←">‹</button><button type="button" class="turn r" aria-label="Turn right (right arrow key)" title="Turn right  →">›</button>
-      <div class="hint" id="hint">Drag to turn · pinch or scroll to zoom<span class="keys"><kbd>←</kbd><kbd>→</kbd> turn</span></div>
+      <div class="hint" id="hint">Drag to turn · pinch or scroll to zoom</div>
   </div>
   <div class="bar">
     <button id="spin" aria-pressed="false">Spin</button>
-    <button id="left">Left</button>
+    <button id="left" title="Left arrow key">← Left</button>
     <button id="front">Front</button>
-    <button id="right">Right</button>
+    <button id="right" title="Right arrow key">Right →</button>
   </div>
 </div>
 
@@ -226,7 +225,7 @@ function panScale(){ return (H*1.12*zoom)/Math.max(1,view.clientHeight); }
 const up=e=>{pts.delete(e.pointerId); const r=[...pts.values()][0]; if(r){lastX=r.x; lastY=r.y;}};
 cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
 cv.addEventListener('wheel',e=>{e.preventDefault(); zoom=THREE.MathUtils.clamp(zoom*Math.exp(e.deltaY*0.001),0.45,1.4); hideHint();},{passive:false});
-function hideHint(){}
+function hideHint(){document.getElementById('hint').style.opacity=0;}
 
 spinBtn.onclick=()=>{spinning=!spinning; spinBtn.setAttribute('aria-pressed',String(spinning)); target.yaw=null;};
 const turnTo=a=>{ spinning=false; spinBtn.setAttribute('aria-pressed','false'); vel=0; const full=Math.PI*2; let d=((a-yaw)%full+full*1.5)%full-full/2; target.yaw=yaw+d; };
@@ -240,8 +239,6 @@ const stops=[sideAngle(0.14), 0, sideAngle(0.87)];
 function nearestStop(){ const a=target.yaw!==null?target.yaw:yaw, F=Math.PI*2; let best=0,bd=9;
   stops.forEach((s,i)=>{ const d=Math.abs(((a-s)%F+F*1.5)%F-F/2); if(d<bd){bd=d;best=i;} }); return best; }
 function stepView(dir){ const i=(nearestStop()+(dir>0?1:2))%3; turnTo(stops[i]); pitch=0.08; hideHint(); }
-document.querySelector('.turn.l').onclick=()=>stepView(-1);
-document.querySelector('.turn.r').onclick=()=>stepView(1);
 addEventListener('keydown',e=>{
   if(e.target.closest && e.target.closest('input,textarea,select')) return;
   if(e.key==='ArrowRight'||e.key==='ArrowLeft'){

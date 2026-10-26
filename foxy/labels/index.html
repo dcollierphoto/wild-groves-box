@@ -110,9 +110,9 @@ function render(){
   grid.innerHTML='';
   visible().forEach(i=>{
     const c=document.createElement('div'); c.className='card'; c.tabIndex=0; c.dataset.i=i;
-    c.setAttribute('role','button'); c.setAttribute('aria-label',`Label ${i+1}, ${NAMES[i]}. Show on the bottle`);
+    c.setAttribute('role','button'); c.setAttribute('aria-label',`${NAMES[i]}. Show on the bottle`);
     c.innerHTML=`<div class="img"><img src="${card(i)}" alt="" draggable="false" loading="lazy"><button type="button" class="x" aria-label="Hide ${NAMES[i]}" title="Hide this one">×</button><button type="button" class="zoom" aria-label="View ${NAMES[i]} full size" title="Full size">⤢</button></div>
-      <div class="cap"><small>Label ${i+1}</small><b>${NAMES[i]}</b></div>`;
+      <div class="cap"><b>${NAMES[i]}</b></div>`;
     c.querySelector('.x').onclick=e=>{ e.stopPropagation(); if(visible().length<=1) return; hidden.push(i); save(); render(); };
     // desktop: double-click opens; touch: a tap opens (double-tap zooms the page on phones)
     // one click puts it on the bottle; a double-click (or the expand button) opens it full size
@@ -137,8 +137,8 @@ const lb=document.getElementById('lb'), lbImg=document.getElementById('lbImg');
 let at=0, lastFocus=null;
 function show(){
   const v=visible(), i=v[at];
-  lbImg.src=full(i); lbImg.alt=`Foxy label ${i+1}, ${NAMES[i]}`;
-  document.getElementById('lbTitle').innerHTML=`<small>Label ${i+1}</small>${NAMES[i]}`;
+  lbImg.src=full(i); lbImg.alt=`Foxy label, ${NAMES[i]}`;
+  document.getElementById('lbTitle').textContent=NAMES[i];
   document.getElementById('lbCount').textContent=`${at+1} of ${v.length}`;
   document.getElementById('lbBottle').href='../?v='+N+'#'+slug(i);
   const nx=v[(at+1)%v.length]; new Image().src=full(nx);
