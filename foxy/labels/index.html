@@ -34,9 +34,12 @@ h1 span{color:var(--pink)}
 .card .cap small{font:600 11px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);flex:none}
 .card .cap b{font:600 15px/1.2 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .x{position:absolute;top:8px;right:8px;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#fffffff0;color:var(--ink);font:600 16px/1 var(--body);opacity:0;transition:opacity .15s;cursor:pointer;border:1px solid var(--line)}
+.card .zoom{position:absolute;top:8px;left:8px;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#fffffff0;color:var(--ink);font:600 15px/1 var(--body);opacity:0;transition:opacity .15s;cursor:zoom-in;border:1px solid var(--line)}
+.card:hover .zoom,.card .zoom:focus-visible{opacity:1}
+.card .zoom:hover{color:var(--pink)}
 .card:hover .x,.card .x:focus-visible{opacity:1}
 .card .x:hover{color:#b3261e}
-@media (hover:none){ .card .x{opacity:.9} }
+@media (hover:none){ .card .x,.card .zoom{opacity:.9} }
 .card:focus-visible{outline:none}
 .card:focus-visible .img{outline:3px solid var(--pink);outline-offset:3px}
 .card.ghost{opacity:.3}
@@ -67,7 +70,7 @@ h1 span{color:var(--pink)}
     <a class="pill" href="../../packaging/">All products</a>
   </div>
   <h1>Foxy <span>Labels</span></h1>
-  <p class="lede">Double-click a label to see it full size, then use the arrows to go through them all. Drag a label to change the order, and the × hides one. Your order is remembered on this device and also used on the bottle page.</p>
+  <p class="lede">Click a label to see it on the bottle. Double-click it, or use the ⤢ button, to see it full size and arrow through them all. Drag a label to change the order, and the × hides one. Your order is remembered on this device and also used on the bottle page.</p>
   <div class="grid" id="grid"></div>
   <p style="margin-top:22px"><button type="button" class="pill" id="reset" hidden>Show all and reset order</button></p>
 </main>
@@ -107,18 +110,23 @@ function render(){
   grid.innerHTML='';
   visible().forEach(i=>{
     const c=document.createElement('div'); c.className='card'; c.tabIndex=0; c.dataset.i=i;
-    c.setAttribute('role','button'); c.setAttribute('aria-label',`Label ${i+1}, ${NAMES[i]}. Open full size`);
-    c.innerHTML=`<div class="img"><img src="${card(i)}" alt="" draggable="false" loading="lazy"><button type="button" class="x" aria-label="Hide ${NAMES[i]}" title="Hide this one">×</button></div>
+    c.setAttribute('role','button'); c.setAttribute('aria-label',`Label ${i+1}, ${NAMES[i]}. Show on the bottle`);
+    c.innerHTML=`<div class="img"><img src="${card(i)}" alt="" draggable="false" loading="lazy"><button type="button" class="x" aria-label="Hide ${NAMES[i]}" title="Hide this one">×</button><button type="button" class="zoom" aria-label="View ${NAMES[i]} full size" title="Full size">⤢</button></div>
       <div class="cap"><small>Label ${i+1}</small><b>${NAMES[i]}</b></div>`;
     c.querySelector('.x').onclick=e=>{ e.stopPropagation(); if(visible().length<=1) return; hidden.push(i); save(); render(); };
     // desktop: double-click opens; touch: a tap opens (double-tap zooms the page on phones)
-    if(touch) c.onclick=()=>open(i); else c.ondblclick=()=>open(i);
-    c.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(i); } };
+    // one click puts it on the bottle; a double-click (or the expand button) opens it full size
+    let clickTimer=null;
+    const toBottle=()=>{ location.href='../?v='+N+'#'+slug(i); };
+    c.onclick=e=>{ if(e.target.closest('.x,.zoom')) return; clearTimeout(clickTimer); clickTimer=setTimeout(toBottle, touch?0:260); };
+    c.ondblclick=e=>{ if(e.target.closest('.x,.zoom')) return; clearTimeout(clickTimer); open(i); };
+    c.querySelector('.zoom').onclick=e=>{ e.stopPropagation(); clearTimeout(clickTimer); open(i); };
+    c.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); location.href='../?v='+N+'#'+slug(i); } else if(e.key===' '){ e.preventDefault(); open(i); } };
     grid.append(c);
   });
   reset.hidden = !hidden.length && order.every((v,k)=>v===k);
 }
-Sortable.create(grid,{ animation:180, delay:220, delayOnTouchOnly:true, filter:'.x', preventOnFilter:false,
+Sortable.create(grid,{ animation:180, delay:220, delayOnTouchOnly:true, filter:'.x,.zoom', preventOnFilter:false,
   ghostClass:'ghost', chosenClass:'chosen', forceFallback:true, fallbackTolerance:4,
   onEnd(){ const vis=[...grid.children].map(c=>+c.dataset.i); order=[...vis, ...order.filter(k=>!vis.includes(k))]; save(); render(); } });
 reset.onclick=()=>{ hidden=[]; order=[...all]; save(); render(); };
@@ -131,7 +139,7 @@ function show(){
   lbImg.src=full(i); lbImg.alt=`Foxy label ${i+1}, ${NAMES[i]}`;
   document.getElementById('lbTitle').innerHTML=`<small>Label ${i+1}</small>${NAMES[i]}`;
   document.getElementById('lbCount').textContent=`${at+1} of ${v.length}`;
-  document.getElementById('lbBottle').href='../#'+slug(i);
+  document.getElementById('lbBottle').href='../?v='+N+'#'+slug(i);
   const nx=v[(at+1)%v.length]; new Image().src=full(nx);
 }
 function open(i){ at=Math.max(0,visible().indexOf(i)); lastFocus=document.activeElement; lb.hidden=false; document.body.style.overflow='hidden'; show(); document.getElementById('lbClose').focus(); }
