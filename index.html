@@ -14,12 +14,6 @@
   --chip:#f4f5f1; --seal:#9e1b1e; --on-seal:#ffffff;
   --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:"Barlow","Helvetica Neue",Arial,sans-serif;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --sweep:#262a25; --sweep-edge:#171a16; --ink:#eceee8; --muted:#a3a99f; --line:#454a42;
-  --chip:#30352e; --seal:#d2464a; --on-seal:#14100f; color-scheme:dark } }
-:root[data-theme="dark"]{
-  --sweep:#262a25; --sweep-edge:#171a16; --ink:#eceee8; --muted:#a3a99f; --line:#454a42;
-  --chip:#30352e; --seal:#d2464a; --on-seal:#14100f; color-scheme:dark }
 html,body{height:100%}
 body{background:var(--sweep-edge);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.4;
   display:flex;flex-direction:column;padding-inline:16px;padding-block:12px;gap:10px;box-sizing:border-box}
