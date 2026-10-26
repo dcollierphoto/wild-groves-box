@@ -73,6 +73,19 @@ button:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
   .thumb .nm small{display:none}
   .thumb i{width:18px;height:18px;font-size:12px;top:3px;right:3px}
 }
+/* on-screen arrows: the same moves as the keyboard arrows */
+.turn{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:44px;height:44px;border-radius:50%;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);font:400 22px/1 var(--body);display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.turn:hover{color:var(--foil);border-color:var(--foil)}
+.turn:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
+.turn.l{left:calc(50% - 150px)} .turn.r{right:calc(50% - 150px)}
+.keys{display:inline-flex;gap:4px;align-items:center;margin-left:6px}
+kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border:1px solid var(--chip-line);border-bottom-width:2px;border-radius:4px;background:var(--chip);font:600 10px/1 var(--body);color:var(--ink)}
+@media (hover:none){ .keys{display:none} }
+@media (max-width:720px){ .turn{width:38px;height:38px;font-size:19px} .turn.l{left:6px} .turn.r{right:6px} }
+.lstep{display:flex;gap:6px}
+.lstep button{flex:1;height:28px;border-radius:6px;border:1px solid var(--chip-line);background:var(--chip);color:var(--ink);font:600 13px/1 var(--body);cursor:pointer}
+.lstep button:hover{color:var(--foil);border-color:var(--foil)}
+@media (max-width:720px){ .lstep{display:none} }
 </style>
 </head>
 <body>
@@ -86,10 +99,12 @@ button:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
   </header>
   <div class="viewrow">
     <div id="view">
-      <div class="hint" id="hint">Drag to turn · pinch or scroll to zoom</div>
+      <button type="button" class="turn l" aria-label="Turn left (left arrow key)" title="Turn left  ←">‹</button><button type="button" class="turn r" aria-label="Turn right (right arrow key)" title="Turn right  →">›</button>
+      <div class="hint" id="hint">Drag to turn · pinch or scroll to zoom<span class="keys"><kbd>←</kbd><kbd>→</kbd> turn · <kbd>↑</kbd><kbd>↓</kbd> labels</span></div>
     </div>
     <div class="picks" role="group" aria-label="Label versions">
       <div class="head"><span>Labels</span><a class="seeall" href="labels/">Full size · reorder →</a></div>
+      <div class="lstep"><button type="button" class="up" aria-label="Previous label (up arrow key)" title="Previous label  ↑">↑</button><button type="button" class="dn" aria-label="Next label (down arrow key)" title="Next label  ↓">↓</button></div>
       <div class="thumbs"></div>
     </div>
   </div>
@@ -290,7 +305,7 @@ function panScale(){ return (H*1.12*zoom)/Math.max(1,view.clientHeight); }
 const up=e=>{pts.delete(e.pointerId); const r=[...pts.values()][0]; if(r){lastX=r.x; lastY=r.y;}};
 cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
 cv.addEventListener('wheel',e=>{e.preventDefault(); zoom=THREE.MathUtils.clamp(zoom*Math.exp(e.deltaY*0.001),0.45,1.4); hideHint();},{passive:false});
-function hideHint(){document.getElementById('hint').style.opacity=0;}
+function hideHint(){}
 
 spinBtn.onclick=()=>{spinning=!spinning; spinBtn.setAttribute('aria-pressed',String(spinning)); target.yaw=null;};
 const turnTo=a=>{ spinning=false; spinBtn.setAttribute('aria-pressed','false'); vel=0; const full=Math.PI*2; let d=((a-yaw)%full+full*1.5)%full-full/2; target.yaw=yaw+d; };
@@ -303,6 +318,12 @@ document.getElementById('right').onclick=()=>{turnTo(sideAngle(0.87)); pitch=0.0
 const stops=[sideAngle(0.14), 0, sideAngle(0.87)];
 function nearestStop(){ const a=target.yaw!==null?target.yaw:yaw, F=Math.PI*2; let best=0,bd=9;
   stops.forEach((s,i)=>{ const d=Math.abs(((a-s)%F+F*1.5)%F-F/2); if(d<bd){bd=d;best=i;} }); return best; }
+function stepView(dir){ const i=(nearestStop()+(dir>0?1:2))%3; turnTo(stops[i]); pitch=0.08; hideHint(); }
+document.querySelector('.turn.l').onclick=()=>stepView(-1);
+document.querySelector('.turn.r').onclick=()=>stepView(1);
+function stepLabel(dir){ const vis=visible(), j=vis.indexOf(current); pick(vis[(j+(dir>0?1:vis.length-1))%vis.length]); }
+document.querySelector('.lstep .up').onclick=()=>stepLabel(-1);
+document.querySelector('.lstep .dn').onclick=()=>stepLabel(1);
 addEventListener('keydown',e=>{
   if(e.target.closest && e.target.closest('input,textarea,select')) return;
   if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
