@@ -50,16 +50,17 @@ code{font:12.5px/1.3 ui-monospace,Menlo,monospace;background:#f3f1ec;padding:1px
 .drop input{display:none}
 
 .list{display:grid;gap:8px}
-.item{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.item{display:grid;grid-template-columns:200px minmax(0,1fr) auto;cursor:grab;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
 .item.new{border-color:var(--accent);background:#fafbf6}
 .item.gone{opacity:.45}
-.item img{width:56px;height:67px;object-fit:cover;border-radius:5px;border:1px solid var(--line);background:#f3f1ec}
+.item img{width:200px;height:auto;aspect-ratio:2000/1856;object-fit:cover;pointer-events:none;border-radius:5px;border:1px solid var(--line);background:#f3f1ec}
 .item input{padding:8px 10px;font-size:14px}
 .item .tags{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
 .tag{font:600 10px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;padding:4px 6px;border-radius:999px;background:#f3f1ec;color:var(--muted)}
 .tag.new{background:var(--accent);color:#fff} .tag.foil{background:#efe3c4;color:#7a5b16}
 .item .acts{display:flex;gap:4px;flex-wrap:wrap;justify-content:end;max-width:200px}
-@media (max-width:520px){ .item{grid-template-columns:48px minmax(0,1fr)} .item .acts{grid-column:1 / -1;justify-content:start;max-width:none} .item img{width:48px;height:58px} }
+@media (max-width:620px){ .item{grid-template-columns:minmax(0,1fr)} .item .acts{justify-content:start;max-width:none} .item img{width:100%} }
+.item.ghost{opacity:.35} .item.chosen{box-shadow:0 8px 22px rgba(0,0,0,.18)}
 
 .pub{position:sticky;bottom:0;z-index:5;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(0,0,0,.05)}
 .pub .note{flex:1 1 220px}
@@ -154,7 +155,7 @@ aside iframe{display:block;width:100%;height:100%;border:0}
     <!-- 4. Labels -->
     <section>
       <h2>Labels on this bottle</h2>
-      <p class="note" style="margin-top:0">This order is what everyone sees first. Rename by typing in the box. Removing hides a label from the site; nothing is deleted from storage.</p>
+      <p class="note" style="margin-top:0">Drag labels to set the order everyone sees. Rename by typing in the box. Removing hides a label from the site; nothing is deleted from storage.</p>
       <div class="list" id="list"></div>
     </section>
 
@@ -173,6 +174,7 @@ aside iframe{display:block;width:100%;height:100%;border:0}
 </aside>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script>
 const OWNER='dcollierphoto', REPO='wild-groves-box', BRANCH='main';
 const API=`https://api.github.com/repos/${OWNER}/${REPO}`;
@@ -366,7 +368,8 @@ function renderList(){
   if(!work.length){ list.innerHTML='<p class="note">No labels yet. Add one above.</p>'; return; }
   work.forEach((L,k)=>{
     const row=document.createElement('div'); row.className='item'+(L.isNew?' new':'');
-    const src = L.isNew ? URL.createObjectURL(L.blobs.thumb) : forBottle(L.thumb);
+    const src = L.isNew ? URL.createObjectURL(L.blobs.card) : forBottle(L.card||L.full);
+    row.dataset.k=k;
     row.innerHTML=`<img alt=""><div><input type="text" maxlength="40" aria-label="Label name"><input type="text" class="fileIn" maxlength="120" aria-label="Original file name" placeholder="Original file name" style="margin-top:4px;font-size:12.5px;padding:6px 10px;color:var(--muted)"><div class="tags"></div></div>
       <div class="acts"><button class="btn small" data-a="up" title="Move up" aria-label="Move up">↑</button><button class="btn small" data-a="dn" title="Move down" aria-label="Move down">↓</button><button class="btn small" data-a="pv">Preview</button><button class="btn small danger" data-a="rm">Remove</button></div>`;
     row.querySelector('img').src=src;
@@ -485,6 +488,9 @@ $('#publish').onclick=async()=>{
     updatePub();
   }
 };
+if(window.Sortable) Sortable.create($('#list'),{ animation:180, delay:220, delayOnTouchOnly:true, filter:'input,button', preventOnFilter:false,
+  ghostClass:'ghost', chosenClass:'chosen', forceFallback:true, fallbackTolerance:4,
+  onEnd(){ const ks=[...$('#list').children].map(r=>+r.dataset.k); work=ks.map(k=>work[k]); renderList(); updatePub(); } });
 checkKey();
 </script>
 </body>
