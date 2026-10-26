@@ -64,6 +64,8 @@ h1 span{color:var(--pink)}
 .lb .pill{color:#f3f1ec;border-color:#ffffff40}
 .lb .pill:hover{color:#fff;border-color:var(--pink);background:var(--pink)}
 .lb .count{font:500 12px/1 var(--body);color:#bdb6a8;align-self:center}
+.status{margin:-10px 0 18px;font:600 13px/1.3 var(--body);color:var(--muted)}
+.status.good{color:#3f6b2a} .status.bad{color:#b3261e}
 </style>
 </head>
 <body>
@@ -73,7 +75,8 @@ h1 span{color:var(--pink)}
     <a class="pill" href="../../packaging/">All products</a>
   </div>
   <h1><span>Foxy</span> Labels</h1>
-  <p class="lede">Click a label to see it on the bottle. Double-click it, or use the ⤢ button, to see it full size and arrow through them all. Drag a label to change the order, and the × hides one. Your order is remembered on this device and also used on the bottle page.</p>
+  <p class="lede">Click a label to see it on the bottle. Double-click it, or use the ⤢ button, to see it full size and arrow through them all.</p>
+  <p class="status" id="status" hidden aria-live="polite"></p>
   <div class="grid" id="grid"></div>
   <p style="margin-top:22px"><button type="button" class="pill" id="reset" hidden>Show hidden labels</button></p>
 </main>
@@ -97,7 +100,22 @@ h1 span{color:var(--pink)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <script type="module">
 // The label list (and the product's name and colour) comes from labels.json, which the studio page edits.
-const MAN = await fetch('../labels.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null) || {"product": {"key": "foxy", "name": "Foxy", "sub": "Highest polyphenol \u00b7 500 mL", "color": "#dc4e90"}, "labels": [{"id": "01", "name": "Painted Fox", "full": "img/01.webp", "thumb": "img/t01.webp", "card": "img/c01.webp"}, {"id": "02", "name": "Harvest Branch", "full": "img/02.webp", "thumb": "img/t02.webp", "card": "img/c02.webp"}, {"id": "03", "name": "Pink Panel", "full": "img/03.webp", "thumb": "img/t03.webp", "card": "img/c03.webp"}, {"id": "04", "name": "Oil Splash", "full": "img/04.webp", "thumb": "img/t04.webp", "card": "img/c04.webp"}, {"id": "05", "name": "Black Foxy", "full": "img/05.webp", "thumb": "img/t05.webp", "card": "img/c05.webp"}, {"id": "06", "name": "Hand-Lettered", "full": "img/06.webp", "thumb": "img/t06.webp", "card": "img/c06.webp"}, {"id": "07", "name": "Golden", "full": "img/07.webp", "thumb": "img/t07.webp", "card": "img/c07.webp"}, {"id": "08", "name": "Painted Branch", "full": "img/08.webp", "thumb": "img/t08.webp", "card": "img/c08.webp"}, {"id": "09", "name": "Olive Row", "full": "img/09.webp", "thumb": "img/t09.webp", "card": "img/c09.webp"}, {"id": "10", "name": "Big Olives", "full": "img/10.webp", "thumb": "img/t10.webp", "card": "img/c10.webp"}, {"id": "11", "name": "Fire Fox", "full": "img/11.webp", "thumb": "img/t11.webp", "card": "img/c11.webp"}, {"id": "12", "name": "Painted Fox Red", "full": "img/12.webp", "thumb": "img/t12.webp", "card": "img/c12.webp"}, {"id": "13", "name": "Ripening Branch", "full": "img/13.webp", "thumb": "img/t13.webp", "card": "img/c13.webp"}, {"id": "14", "name": "Pink Panel Ripening", "full": "img/14.webp", "thumb": "img/t14.webp", "card": "img/c14.webp"}], "removed": [], "rev": 7};
+// On a device with David's studio key, this page reads the list straight from GitHub and saves
+// his order and hidden labels back to it, so everyone sees his order. Everyone else just views.
+const KEY=(()=>{ try{ return localStorage.getItem('studio-key')||''; }catch(e){ return ''; } })();
+const API='https://api.github.com/repos/dcollierphoto/wild-groves-box';
+const FOLDER=location.pathname.split('/').filter(Boolean).slice(-2)[0];
+const LPATH=`${FOLDER}/labels.json`;
+const fromB64=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,'')),c=>c.charCodeAt(0)));
+const toB64=s=>{ const b=new TextEncoder().encode(s); let x=''; for(let i=0;i<b.length;i+=0x8000) x+=String.fromCharCode(...b.subarray(i,i+0x8000)); return btoa(x); };
+async function ghList(){
+  const r=await fetch(`${API}/contents/${LPATH}?ref=main&t=${Date.now()}`,{headers:{Authorization:'Bearer '+KEY,Accept:'application/vnd.github+json'}});
+  if(!r.ok) throw Object.assign(new Error('gh'),{status:r.status});
+  const j=await r.json(); return {man:JSON.parse(fromB64(j.content)), sha:j.sha};
+}
+let canEdit=false, fileSha=null, live=null;
+if(KEY){ try{ const g=await ghList(); live=g.man; fileSha=g.sha; canEdit=true; }catch(e){} }
+const MAN = live || await fetch('../labels.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null) || {"product": {"key": "foxy", "name": "Foxy", "sub": "Highest polyphenol \u00b7 500 mL", "color": "#dc4e90"}, "labels": [{"id": "01", "name": "Painted Fox", "full": "img/01.webp", "thumb": "img/t01.webp", "card": "img/c01.webp"}, {"id": "02", "name": "Harvest Branch", "full": "img/02.webp", "thumb": "img/t02.webp", "card": "img/c02.webp"}, {"id": "03", "name": "Pink Panel", "full": "img/03.webp", "thumb": "img/t03.webp", "card": "img/c03.webp"}, {"id": "04", "name": "Oil Splash", "full": "img/04.webp", "thumb": "img/t04.webp", "card": "img/c04.webp"}, {"id": "05", "name": "Black Foxy", "full": "img/05.webp", "thumb": "img/t05.webp", "card": "img/c05.webp"}, {"id": "06", "name": "Hand-Lettered", "full": "img/06.webp", "thumb": "img/t06.webp", "card": "img/c06.webp"}, {"id": "07", "name": "Golden", "full": "img/07.webp", "thumb": "img/t07.webp", "card": "img/c07.webp"}, {"id": "08", "name": "Painted Branch", "full": "img/08.webp", "thumb": "img/t08.webp", "card": "img/c08.webp"}, {"id": "09", "name": "Olive Row", "full": "img/09.webp", "thumb": "img/t09.webp", "card": "img/c09.webp"}, {"id": "10", "name": "Big Olives", "full": "img/10.webp", "thumb": "img/t10.webp", "card": "img/c10.webp"}, {"id": "11", "name": "Fire Fox", "full": "img/11.webp", "thumb": "img/t11.webp", "card": "img/c11.webp"}, {"id": "12", "name": "Painted Fox Red", "full": "img/12.webp", "thumb": "img/t12.webp", "card": "img/c12.webp"}, {"id": "13", "name": "Ripening Branch", "full": "img/13.webp", "thumb": "img/t13.webp", "card": "img/c13.webp"}, {"id": "14", "name": "Pink Panel Ripening", "full": "img/14.webp", "thumb": "img/t14.webp", "card": "img/c14.webp"}], "removed": [], "rev": 8};
 const P = Object.assign({key:'foxy', name:'', color:''}, MAN.product||{});
 const LABELS = MAN.labels||[];
 if(P.name){ document.title=P.name+' Labels'; document.querySelector('h1 span').textContent=P.name; }
@@ -107,14 +125,31 @@ const N = MAN.rev || LABELS.length;
 const full = i => '../'+LABELS[i].full;
 const card = i => '../'+(LABELS[i].card||LABELS[i].full);
 const slug = i => NAMES[i].toLowerCase().replace(/[^a-z0-9]+/g,'-');
-// order and hidden labels are saved by label id, shared with the bottle page
+// one order for everyone: the list's own order; hidden labels carry hidden:true in the list
 const ids=LABELS.map(L=>L.id);
-const load=k=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return Array.isArray(v)?v:null; }catch(e){ return null; } };
-const toId=v=> typeof v==='number' ? String(v+1).padStart(2,'0') : String(v);
-const toIdx=list=> (list||[]).map(toId).map(id=>ids.indexOf(id)).filter(i=>i>=0);
-let hidden=toIdx(load(P.key+'-hidden'));
-let order=toIdx(load(P.key+'-order')); LABELS.forEach((_,i)=>{ if(!order.includes(i)) order.push(i); });
-const save=()=>{ try{ localStorage.setItem(P.key+'-hidden',JSON.stringify(hidden.map(i=>ids[i]))); localStorage.setItem(P.key+'-order',JSON.stringify(order.map(i=>ids[i]))); }catch(e){} };
+let order=LABELS.map((_,i)=>i);
+let hidden=LABELS.map((L,i)=>L.hidden?i:-1).filter(i=>i>=0);
+let myRev=MAN.rev||0, saveTimer=null, saving=false, again=false;
+const status=document.getElementById('status');
+const say=(text,kind='')=>{ status.textContent=text; status.className='status '+kind; status.hidden=!text; };
+const save=()=>{ if(!canEdit) return; clearTimeout(saveTimer); say('Saving your order…'); saveTimer=setTimeout(push,900); };
+async function push(){
+  if(saving){ again=true; return; } saving=true;
+  try{
+    const g=await ghList();
+    if((g.man.rev||0)!==myRev){ say('This list was changed somewhere else (maybe the studio). Reload the page, then set the order again.','bad'); return; }
+    const byId=Object.fromEntries(g.man.labels.map(L=>[L.id,L]));
+    const next=order.map(i=>ids[i]).filter(id=>byId[id]).map(id=>{ const L={...byId[id]}; if(hidden.includes(ids.indexOf(id))) L.hidden=true; else delete L.hidden; return L; });
+    g.man.labels.forEach(L=>{ if(!next.some(x=>x.id===L.id)) next.push(L); });
+    const out={...g.man, labels:next, rev:myRev+1, updated:new Date().toISOString()};
+    const r=await fetch(`${API}/contents/${LPATH}`,{method:'PUT',headers:{Authorization:'Bearer '+KEY,Accept:'application/vnd.github+json','Content-Type':'application/json'},
+      body:JSON.stringify({message:`Labels page: ${P.name||FOLDER} order`, content:toB64(JSON.stringify(out,null,1)+'\n'), sha:g.sha, branch:'main'})});
+    if(!r.ok) throw Object.assign(new Error('put'),{status:r.status});
+    myRev=out.rev; say('Saved for everyone. Other devices update in a minute or two.','good');
+  }catch(e){
+    say(e.status===401||e.status===403 ? 'GitHub refused the save. Your studio key may have expired; set a new one in the studio.' : 'Couldn\'t save just now. Move a label again to retry.','bad');
+  }finally{ saving=false; if(again){ again=false; push(); } }
+}
 const visible=()=>order.filter(i=>!hidden.includes(i));
 function copyName(el, text){
   const done=()=>{ const was=el.textContent; el.classList.add('done'); el.textContent='Copied'; setTimeout(()=>{ el.textContent=was; el.classList.remove('done'); },1200); };
@@ -135,7 +170,8 @@ function render(){
     if(LABELS[i].file){ const f=document.createElement('button'); f.type='button'; f.className='file'; f.title='Click to copy the file name';
       f.textContent=LABELS[i].file; c.querySelector('.cap').append(f);
       f.onclick=e=>{ e.stopPropagation(); copyName(f, LABELS[i].file); }; f.ondblclick=e=>e.stopPropagation(); }
-    c.querySelector('.x').onclick=e=>{ e.stopPropagation(); if(visible().length<=1) return; hidden.push(i); save(); render(); };
+    if(canEdit) c.querySelector('.x').onclick=e=>{ e.stopPropagation(); if(visible().length<=1) return; hidden.push(i); save(); render(); };
+    else c.querySelector('.x').remove();
     // desktop: double-click opens; touch: a tap opens (double-tap zooms the page on phones)
     // one click puts it on the bottle; a double-click (or the expand button) opens it full size
     let clickTimer=null;
@@ -146,14 +182,15 @@ function render(){
     c.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); location.href='../?v='+N+'#'+slug(i); } else if(e.key===' '){ e.preventDefault(); open(i); } };
     grid.append(c);
   });
-  reset.hidden = !hidden.length; reset.textContent = `Show hidden labels (${hidden.length})`;
+  reset.hidden = !canEdit || !hidden.length; reset.textContent = `Show hidden labels (${hidden.length})`;
 }
 // if the drag library can't load, the page still works without reordering
-if(window.Sortable) Sortable.create(grid,{ animation:180, delay:220, delayOnTouchOnly:true, filter:'.x,.zoom,.file', preventOnFilter:false,
+if(canEdit && window.Sortable) Sortable.create(grid,{ animation:180, delay:220, delayOnTouchOnly:true, filter:'.x,.zoom,.file', preventOnFilter:false,
   ghostClass:'ghost', chosenClass:'chosen', forceFallback:true, fallbackTolerance:4,
   onEnd(){ const vis=[...grid.children].map(c=>+c.dataset.i); order=[...vis, ...order.filter(k=>!vis.includes(k))]; save(); render(); } });
 // brings hidden labels back without touching the custom order
 reset.onclick=()=>{ hidden=[]; save(); render(); };
+if(canEdit) document.querySelector('.lede').textContent='Drag a label to set the order everyone sees, and the × hides one. Click a label to see it on the bottle; double-click it, or use the ⤢ button, to see it full size.';
 
 // full-size view
 const lb=document.getElementById('lb'), lbImg=document.getElementById('lbImg');
@@ -181,6 +218,23 @@ let sx=null; const st=document.getElementById('lbStage');
 st.addEventListener('touchstart',e=>{ sx=e.touches[0].clientX; },{passive:true});
 st.addEventListener('touchend',e=>{ if(sx===null) return; const dx=e.changedTouches[0].clientX-sx; if(Math.abs(dx)>40) step(dx<0?1:-1); sx=null; });
 
+// Before this change each browser kept its own order. If this browser still has one, offer to make it everyone's.
+if(canEdit){
+  const read=k=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return Array.isArray(v)?v:null; }catch(e){ return null; } };
+  const toId=v=> typeof v==='number' ? String(v+1).padStart(2,'0') : String(v);
+  const oldO=(read(P.key+'-order')||[]).map(toId).map(id=>ids.indexOf(id)).filter(i=>i>=0);
+  const oldH=(read(P.key+'-hidden')||[]).map(toId).map(id=>ids.indexOf(id)).filter(i=>i>=0);
+  const forget=()=>{ try{ localStorage.removeItem(P.key+'-order'); localStorage.removeItem(P.key+'-hidden'); }catch(e){} };
+  if(oldO.length || oldH.length){
+    const fullOld=[...oldO, ...order.filter(i=>!oldO.includes(i))];
+    if(fullOld.join()!==order.join() || oldH.sort().join()!==[...hidden].sort().join()){
+      const box=document.createElement('p'); box.className='status'; box.innerHTML='This browser still has the order you set earlier. <button type="button" class="pill" id="useOld">Use it for everyone</button> <button type="button" class="pill" id="noOld">No thanks</button>';
+      status.after(box);
+      box.querySelector('#useOld').onclick=()=>{ order=fullOld; hidden=oldH; forget(); box.remove(); render(); save(); };
+      box.querySelector('#noOld').onclick=()=>{ forget(); box.remove(); };
+    } else forget();
+  }
+}
 render();
 </script>
 </body>

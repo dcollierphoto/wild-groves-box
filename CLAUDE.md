@@ -17,6 +17,8 @@ David's site of turnable 3D bottles and the gift box. Live at https://dcollierph
   re-add ids listed under `removed`. `_src/build_foxy.py` already follows these rules (it only appends).
 - Bump `rev` on every change: the studio refuses to publish if `rev` changed since it loaded, which is how it
   avoids overwriting someone else's edit.
-- Viewers keep each visitor's order/hidden choices in localStorage by label id (`<key>-order`, `<key>-hidden`).
+- Order is shared: the order of `labels` in labels.json is what everyone sees; `hidden: true` hides a label.
+  David sets both by dragging on `<product>/labels/` on a device with his studio key (saved via the contents API).
+  Visitors without the key can't reorder. When appending labels by hand, keep existing entries' order and `hidden`.
 - If the viewer template changes, rebuild `foxy/`, `product-template/`, and any studio-made product folders
   (they are copies of `product-template/index.html` and `product-template/labels/index.html`).

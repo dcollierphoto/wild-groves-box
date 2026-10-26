@@ -377,6 +377,7 @@ function renderList(){
     const tags=row.querySelector('.tags');
     if(L.isNew) tags.insertAdjacentHTML('beforeend','<span class="tag new">New</span>');
     if(L.foil) tags.insertAdjacentHTML('beforeend','<span class="tag foil">Foil</span>');
+    if(L.hidden) tags.insertAdjacentHTML('beforeend','<span class="tag">Hidden on the site</span>');
     if(k===0) tags.insertAdjacentHTML('beforeend','<span class="tag">Shown first</span>');
     row.querySelector('[data-a=up]').disabled=k===0; row.querySelector('[data-a=dn]').disabled=k===work.length-1;
     row.querySelector('[data-a=up]').onclick=()=>{ [work[k-1],work[k]]=[work[k],work[k-1]]; renderList(); updatePub(); };

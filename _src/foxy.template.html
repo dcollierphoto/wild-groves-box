@@ -208,7 +208,16 @@ bottle.add(new THREE.Mesh(capGeo, capMat));
 // Label: 7.0 x 6.5 in, wrapped around the body, front panel facing the camera.
 // The list of labels (and the product's name and colour) lives in labels.json next to this page,
 // so the studio page can add, rename, reorder or remove labels without touching this file.
-const MAN = await fetch('labels.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null) || TEX.fallback;
+// On a device with David's studio key, read the list straight from GitHub so a change shows at once;
+// everyone else reads the copy on the site, which catches up a minute or two after a change.
+const STUDIO_KEY=(()=>{ try{ return localStorage.getItem('studio-key')||''; }catch(e){ return ''; } })();
+const FOLDER=location.pathname.split('/').filter(Boolean).pop();
+async function freshList(){
+  if(!STUDIO_KEY) return null;
+  try{ const r=await fetch(`https://api.github.com/repos/dcollierphoto/wild-groves-box/contents/${FOLDER}/labels.json?ref=main&t=${Date.now()}`,{headers:{Authorization:'Bearer '+STUDIO_KEY,Accept:'application/vnd.github.raw'}});
+    return r.ok ? JSON.parse(await r.text()) : null; }catch(e){ return null; }
+}
+const MAN = await freshList() || await fetch('labels.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null) || TEX.fallback;
 const P = Object.assign({key:'foxy', name:'', sub:'', color:''}, MAN.product||{});
 const LABELS = (MAN.labels||[]).slice();
 if(P.name){ document.title=P.name+' Bottle'; document.querySelector('h1 span').textContent=P.name; }
@@ -237,18 +246,11 @@ const H = 1666*PX, CY = H*0.5;
 bottle.position.y = 0;
 
 // Label versions: tap a tile, or use the up and down arrows, to put it on the bottle.
-// The order and any hidden labels are set on the full-size labels page and remembered in this browser,
-// saved by each label's id so adding or removing labels later doesn't scramble them.
+// Everyone sees the same order, the one David sets on the full-size labels page; hidden labels are left out.
 const thumbsEl=document.querySelector('.thumbs');
-const ids=()=>LABELS.map(L=>L.id);
-const load=k=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return Array.isArray(v)?v:null; }catch(e){ return null; } };
-// older saves used positions (0, 1, 2...), which match ids 01, 02, 03...
-const toId=v=> typeof v==='number' ? String(v+1).padStart(2,'0') : String(v);
-const toIdx=list=> (list||[]).map(toId).map(id=>ids().indexOf(id)).filter(i=>i>=0);
-let hidden=toIdx(load(P.key+'-hidden'));
-let order=toIdx(load(P.key+'-order')); LABELS.forEach((_,i)=>{ if(!order.includes(i)) order.push(i); });
 let current=0;
-const save=()=>{ try{ localStorage.setItem(P.key+'-hidden',JSON.stringify(hidden.map(i=>LABELS[i].id))); localStorage.setItem(P.key+'-order',JSON.stringify(order.map(i=>LABELS[i].id))); }catch(e){} };
+const order=LABELS.map((_,i)=>i);
+let hidden=LABELS.map((L,i)=>L.hidden?i:-1).filter(i=>i>=0);
 const visible=()=>order.filter(i=>!hidden.includes(i) && !LABELS[i].temp).concat(order.filter(i=>LABELS[i].temp));
 // each label has a name people can use when they say which one they like; the page link carries it too
 const slug=i=>LABELS[i].name.toLowerCase().replace(/[^a-z0-9]+/g,'-');
