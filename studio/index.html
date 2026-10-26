@@ -469,7 +469,10 @@ $('#publish').onclick=async()=>{
       nowMan={product:{key:folder,name:newProd.name,sub:newProd.sub||'500 mL',color},labels:[],removed:[],rev:0};
     }else{
       nowMan=await readJSON(`${folder}/labels.json`);
-      if(!nowMan || (nowMan.rev||0)!==(man.rev||0)) throw new Error('changed');
+      if(!nowMan) throw new Error('changed');
+      // if the list changed elsewhere since the studio loaded (e.g. a drag on the labels page), the studio's
+      // version wins, but labels added elsewhere in the meantime are kept at the end
+      const mine=new Set(work.map(L=>L.id)); var extra=(nowMan.labels||[]).filter(L=>!mine.has(L.id) && !removed.includes(L.id));
     }
     const files=[];
     const labels=[];
@@ -486,7 +489,7 @@ $('#publish').onclick=async()=>{
         const {origName,origFile,isNew,blobs,...keep}=L; if(!keep.file) delete keep.file; labels.push(keep);
       }
     }
-    nowMan.labels=labels;
+    nowMan.labels=newProd?labels:labels.concat(extra||[]);
     nowMan.product={...(nowMan.product||{}), color};
     nowMan.removed=[...new Set([...(nowMan.removed||[]),...removed])];
     nowMan.rev=(nowMan.rev||0)+1;
@@ -534,6 +537,12 @@ $('#publish').onclick=async()=>{
 if(window.Sortable) Sortable.create($('#list'),{ animation:180, delay:220, delayOnTouchOnly:true, filter:'input,button', preventOnFilter:false,
   ghostClass:'ghost', chosenClass:'chosen', forceFallback:true, fallbackTolerance:4,
   onEnd(){ const ks=[...$('#list').children].map(r=>+r.dataset.k); work=ks.map(k=>work[k]); renderList(); updatePub(); } });
+// coming back to this tab: if nothing is waiting to publish, pick up changes made elsewhere (like the labels page)
+document.addEventListener('visibilitychange',async()=>{
+  if(document.hidden || !prod || newProd || dirty() || $('#work').classList.contains('hidden')) return;
+  const m=await readJSON(`${prod}/labels.json`).catch(()=>null);
+  if(m && (m.rev||0)!==(man.rev||0)){ man=m; resetWork(); setPreview(`../${prod}/?studio=${Date.now()}`); }
+});
 checkKey();
 </script>
 </body>

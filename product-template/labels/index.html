@@ -132,12 +132,13 @@ let hidden=LABELS.map((L,i)=>L.hidden?i:-1).filter(i=>i>=0);
 // a browser without the studio key keeps its own order and hidden labels (saved by label id)
 const readLocal=k=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return Array.isArray(v)?v:null; }catch(e){ return null; } };
 const localIdx=k=>(readLocal(k)||[]).map(v=>typeof v==='number'?String(v+1).padStart(2,'0'):String(v)).map(id=>LABELS.findIndex(L=>L.id===id)).filter(i=>i>=0);
-if(!canEdit){ const lo=localIdx(P.key+'-order'), lh=readLocal(P.key+'-hidden');
+// a visitor's own order is kept only until David changes the shared order
+if(!canEdit && (()=>{ let r=null; try{ r=localStorage.getItem(P.key+'-rev'); }catch(e){} if(String(MAN.rev||0)!==r){ try{ localStorage.removeItem(P.key+'-order'); localStorage.removeItem(P.key+'-hidden'); }catch(e){} return false; } return true; })()){ const lo=localIdx(P.key+'-order'), lh=readLocal(P.key+'-hidden');
   if(lo.length) order=[...lo, ...order.filter(i=>!lo.includes(i))]; if(lh) hidden=localIdx(P.key+'-hidden'); }
 let myRev=MAN.rev||0, saveTimer=null, saving=false, again=false;
 const status=document.getElementById('status');
 const say=(text,kind='')=>{ status.textContent=text; status.className='status '+kind; status.hidden=!text; };
-const save=()=>{ if(!canEdit){ try{ localStorage.setItem(P.key+'-order',JSON.stringify(order.map(i=>ids[i]))); localStorage.setItem(P.key+'-hidden',JSON.stringify(hidden.map(i=>ids[i]))); }catch(e){} return; } clearTimeout(saveTimer); say('Saving your order…'); saveTimer=setTimeout(push,900); };
+const save=()=>{ if(!canEdit){ try{ localStorage.setItem(P.key+'-rev',String(MAN.rev||0)); localStorage.setItem(P.key+'-order',JSON.stringify(order.map(i=>ids[i]))); localStorage.setItem(P.key+'-hidden',JSON.stringify(hidden.map(i=>ids[i]))); }catch(e){} return; } clearTimeout(saveTimer); say('Saving your order…'); saveTimer=setTimeout(push,900); };
 async function push(){
   if(saving){ again=true; return; } saving=true;
   try{
