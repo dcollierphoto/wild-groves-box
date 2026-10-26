@@ -134,6 +134,7 @@ aside iframe{display:block;width:100%;height:100%;border:0}
           <img id="addPrev" alt="" style="flex:0 0 120px;width:120px;border-radius:6px;border:1px solid var(--line)">
           <div style="flex:1 1 240px;display:grid;gap:10px">
             <label class="f">Label name<input type="text" id="addName" maxlength="40"></label>
+            <label class="f">Original file name<input type="text" id="addFile" maxlength="120" placeholder="e.g. Foxy_Label_v7.ai"></label>
             <label class="f">Gold foil (optional)
               <input type="file" id="foilIn" accept="image/png,image/jpeg,image/webp,application/pdf" style="font-size:13px">
             </label>
@@ -249,7 +250,7 @@ async function openProduct(folder){
   setPreview(`../${folder}/?studio=${Date.now()}`);
 }
 function resetWork(){
-  work = man.labels.map(L=>({...L, origName:L.name}));
+  work = man.labels.map(L=>({...L, origName:L.name, origFile:L.file||''}));
   removed = [];
   cancelAdd(); renderList(); updatePub();
 }
@@ -330,7 +331,7 @@ async function startAdd(file){
     const ratio=W(im)/Hh(im), want=LW/LH;
     pending={...(await makeLabel(im)), foil:null, name:cleanName(file.name.replace(/\.[a-z0-9]+$/i,'').replace(/[_-]+/g,' '))};
     pending.urls={full:URL.createObjectURL(pending.full), thumb:URL.createObjectURL(pending.thumb)};
-    $('#addPrev').src=URL.createObjectURL(pending.card); $('#addName').value=pending.name;
+    $('#addPrev').src=URL.createObjectURL(pending.card); $('#addName').value=pending.name; $('#addFile').value=file.name;
     const off=Math.abs(ratio/want-1);
     if(off>0.03) msg('#addMsg',`This file is ${(W(im)/Hh(im)).toFixed(2)} wide for every 1 tall; labels are ${want.toFixed(2)}. It will be stretched to fit, so check the preview.`,'warn');
     else msg('#addMsg','');
@@ -354,7 +355,8 @@ $('#addOk').onclick=()=>{
   if(!name){ msg('#addMsg','Give the label a name first.','bad'); return; }
   if(work.some(L=>L.name.toLowerCase()===name.toLowerCase())){ msg('#addMsg','Another label already has that name. Pick a different one so people can tell them apart.','bad'); return; }
   const id='s'+Date.now().toString(36);
-  work.push({id, name, origName:null, isNew:true, blobs:pending, full:pending.urls.full, thumb:pending.urls.thumb, foil:pending.urls.foil||null});
+  const fileName=$('#addFile').value.replace(/[<>"`]/g,'').trim().slice(0,120);
+  work.push({id, name, file:fileName, origName:null, origFile:null, isNew:true, blobs:pending, full:pending.urls.full, thumb:pending.urls.thumb, foil:pending.urls.foil||null});
   cancelAdd(); renderList(); updatePub();
 };
 
@@ -365,11 +367,13 @@ function renderList(){
   work.forEach((L,k)=>{
     const row=document.createElement('div'); row.className='item'+(L.isNew?' new':'');
     const src = L.isNew ? URL.createObjectURL(L.blobs.thumb) : forBottle(L.thumb);
-    row.innerHTML=`<img alt=""><div><input type="text" maxlength="40" aria-label="Label name"><div class="tags"></div></div>
+    row.innerHTML=`<img alt=""><div><input type="text" maxlength="40" aria-label="Label name"><input type="text" class="fileIn" maxlength="120" aria-label="Original file name" placeholder="Original file name" style="margin-top:4px;font-size:12.5px;padding:6px 10px;color:var(--muted)"><div class="tags"></div></div>
       <div class="acts"><button class="btn small" data-a="up" title="Move up" aria-label="Move up">↑</button><button class="btn small" data-a="dn" title="Move down" aria-label="Move down">↓</button><button class="btn small" data-a="pv">Preview</button><button class="btn small danger" data-a="rm">Remove</button></div>`;
     row.querySelector('img').src=src;
     const inp=row.querySelector('input'); inp.value=L.name;
     inp.oninput=()=>{ L.name=cleanName(inp.value)||L.name; updatePub(); };
+    const fin=row.querySelector('.fileIn'); fin.value=L.file||'';
+    fin.oninput=()=>{ L.file=fin.value.replace(/[<>"`]/g,'').trim().slice(0,120); updatePub(); };
     const tags=row.querySelector('.tags');
     if(L.isNew) tags.insertAdjacentHTML('beforeend','<span class="tag new">New</span>');
     if(L.foil) tags.insertAdjacentHTML('beforeend','<span class="tag foil">Foil</span>');
@@ -390,6 +394,7 @@ function changes(){
   const out=[];
   const added=work.filter(L=>L.isNew).length; if(added) out.push(`${added} new`);
   const ren=work.filter(L=>!L.isNew && L.name!==L.origName).length; if(ren) out.push(`${ren} renamed`);
+  const fil=work.filter(L=>!L.isNew && (L.file||'')!==(L.origFile||'')).length; if(fil) out.push(`${fil} file name${fil>1?'s':''} updated`);
   if(removed.length) out.push(`${removed.length} removed`);
   const was=man.labels.map(L=>L.id).filter(id=>!removed.includes(id)), now=work.filter(L=>!L.isNew).map(L=>L.id);
   if(was.join()!==now.join()) out.push('new order');
@@ -428,11 +433,11 @@ $('#publish').onclick=async()=>{
         files.push({path:`${folder}/${base}.jpg`, b64:await b64blob(b.full)});
         files.push({path:`${folder}/img/t${L.id}.jpg`, b64:await b64blob(b.thumb)});
         files.push({path:`${folder}/img/c${L.id}.jpg`, b64:await b64blob(b.card)});
-        const e={id:L.id, name:L.name, full:`${base}.jpg`, thumb:`img/t${L.id}.jpg`, card:`img/c${L.id}.jpg`};
+        const e={id:L.id, name:L.name, ...(L.file?{file:L.file}:{}), full:`${base}.jpg`, thumb:`img/t${L.id}.jpg`, card:`img/c${L.id}.jpg`};
         if(b.foil){ files.push({path:`${folder}/img/f${L.id}.png`, b64:await b64blob(b.foil)}); e.foil=`img/f${L.id}.png`; }
         labels.push(e);
       }else{
-        const {origName,isNew,blobs,...keep}=L; labels.push(keep);
+        const {origName,origFile,isNew,blobs,...keep}=L; if(!keep.file) delete keep.file; labels.push(keep);
       }
     }
     nowMan.labels=labels;
