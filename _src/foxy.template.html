@@ -45,8 +45,12 @@ button:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
 .thumb .nm{display:block;font:600 10.5px/1.25 var(--body);color:var(--ink);letter-spacing:.02em;text-transform:none}
 .thumb .nm small{display:block;font-weight:500;font-size:9.5px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 .thumb .nm b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.seeall{font:600 10px/1.2 var(--body);letter-spacing:.04em;color:var(--foil);text-decoration:none}
-.seeall:hover{text-decoration:underline}
+.seeall{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--foil);border-radius:8px;background:var(--chip);color:var(--foil);font:600 10.5px/1.15 var(--body);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,.08);transition:background .15s,color .15s}
+.seeall b{font-size:14px;line-height:1;transition:transform .15s}
+.seeall:hover{background:var(--foil);color:#fff}
+.seeall:hover b{transform:translateX(3px)}
+.seeall:focus-visible{outline:2px solid var(--foil);outline-offset:2px}
+.picks .head{align-items:stretch}
 .thumb i{position:absolute;top:4px;right:4px;width:22px;height:22px;display:grid;place-items:center;font:600 14px/1 var(--body);font-style:normal;color:var(--ink);background:var(--chip);border-radius:50%;opacity:0;transition:opacity .15s;cursor:pointer}
 .thumb:hover i,.thumb i:focus-visible{opacity:.9}
 .thumb i:hover{color:#b3261e;opacity:1}
@@ -106,7 +110,7 @@ kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 
       <div class="hint" id="hint">Drag to turn · pinch or scroll to zoom</div>
     </div>
     <div class="picks" role="group" aria-label="Label versions">
-      <div class="head"><span>Labels</span><a class="seeall" href="labels/">Full size · reorder →</a></div>
+      <div class="head"><a class="seeall" href="labels/" title="See every label flat, at full size">Full-size labels <b aria-hidden="true">→</b></a></div>
       <div class="lstep"><button type="button" class="up" aria-label="Previous label (up arrow key)" title="Previous label (up arrow key)">↑</button><button type="button" class="dn" aria-label="Next label (down arrow key)" title="Next label (down arrow key)">↓</button></div>
       <div class="thumbs"></div>
     </div>
