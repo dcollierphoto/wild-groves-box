@@ -344,7 +344,7 @@ function panScale(){ return (H*1.12*zoom)/Math.max(1,view.clientHeight); }
 const up=e=>{pts.delete(e.pointerId); const r=[...pts.values()][0]; if(r){lastX=r.x; lastY=r.y;}};
 cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
 cv.addEventListener('wheel',e=>{e.preventDefault(); stopTour();
-  if(!e.ctrlKey && Math.abs(e.deltaX)>Math.abs(e.deltaY)){ yaw+=e.deltaX*0.006; vel=0; target.yaw=null; spinning=false; spinBtn.setAttribute('aria-pressed','false'); }
+  if(!e.ctrlKey && Math.abs(e.deltaX)>Math.abs(e.deltaY)){ yaw-=e.deltaX*0.006; /* natural: push left, bottle turns left */ vel=0; target.yaw=null; spinning=false; spinBtn.setAttribute('aria-pressed','false'); }
   else zoom=THREE.MathUtils.clamp(zoom*Math.exp(e.deltaY*(e.ctrlKey?0.01:0.001)),0.45,1.4);
   hideHint();},{passive:false});
 function hideHint(){document.getElementById('hint').style.opacity=0;}
