@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<script>if(new URLSearchParams(location.search).has("embed"))document.documentElement.classList.add("embed")</script>
+<style>.embed .allp,.embed header,.embed .note,.embed .bar{display:none!important}.embed body{padding:0!important;gap:0!important}.embed #stage{border-radius:0}</style>
 <title>Wild Groves Box Viewer</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500&display=swap">
 <style>
@@ -199,7 +201,7 @@ canvas.addEventListener('pointermove', e => {
   dirty = true; });
 const up = e => { pts.delete(e.pointerId); pinch = 0; if (!pts.size) { st.held = false; canvas.classList.remove('dragging'); } };
 canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
-canvas.addEventListener('wheel', e => { e.preventDefault(); st.zoom = Math.max(.5, Math.min(1.9, st.zoom * Math.exp(e.deltaY * .0012))); dirty = true; }, { passive: false });
+canvas.addEventListener('wheel', e => { if (document.documentElement.classList.contains('embed')) return; e.preventDefault(); st.zoom = Math.max(.5, Math.min(1.9, st.zoom * Math.exp(e.deltaY * .0012))); dirty = true; }, { passive: false });
 canvas.addEventListener('keydown', e => { const k = { ArrowLeft: [-.12, 0], ArrowRight: [.12, 0], ArrowUp: [0, .1], ArrowDown: [0, -.1] }[e.key]; if (!k) return; e.preventDefault(); st.goal = null; setSpin(false); st.az += k[0]; st.el = clampEl(st.el + k[1]); dirty = true; });
 
 let last = performance.now();
