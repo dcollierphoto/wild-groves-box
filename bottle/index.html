@@ -208,7 +208,7 @@ shadow.rotation.x=-Math.PI/2; shadow.position.y=0.002; scene.add(shadow);
 const H = 1666*PX, CY = H*0.5;
 
 // Camera orbit state
-let yaw=0, pitch=0.08, dist=34, vel=0, spinning=false, foil=false, t0=performance.now(), idle=0;
+let yaw=0, pitch=0.08, dist=34, vel=0, spinning=new URLSearchParams(location.search).has('spin'), foil=false, t0=performance.now(), idle=0;
 const target={yaw:null};
 const spinBtn=document.getElementById('spin'); spinBtn.setAttribute('aria-pressed',String(spinning));
 function place(){
